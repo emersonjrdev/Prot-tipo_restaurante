@@ -15,6 +15,9 @@ import { useAuth } from '../contexts/AuthContext'
 import { playSomVenda, playSomErro } from '../utils/sons'
 import ModalPagamento from '../components/ModalPagamento'
 import ItemRow from '../components/comandas/ItemRow'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { FieldLabel, FIELD_CONTROL } from '../components/ui/Input'
 
 function formatarData(dataStr) {
   if (!dataStr) return '-'
@@ -451,214 +454,200 @@ export default function Caixa() {
       ))
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-amber-900 mb-6">Caixa</h2>
+    <div className="space-y-8 animate-fade-in">
+      <header>
+        <p className="text-sm font-semibold uppercase tracking-[0.12em] text-accent-700">Operações</p>
+        <h2 className="font-display text-3xl font-semibold text-ink-900 tracking-tight mt-1">Caixa</h2>
+      </header>
 
       {/* Status e Abertura/Fechamento */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 sm:items-center">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 sm:items-center">
         <span
-          className={`px-4 py-2 rounded-xl font-semibold ${
-            caixaAberto ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+          className={`px-4 py-2 rounded-2xl font-semibold border ${
+            caixaAberto
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200/80'
+              : 'bg-amber-50 text-amber-900 border-amber-200/80'
           }`}
         >
           {caixaAberto ? 'Caixa aberto' : 'Caixa fechado'}
         </span>
         {!caixaAberto && !mostrarAbertura && (
-          <button
-            type="button"
-            onClick={() => setMostrarAbertura(true)}
-            className="w-full sm:w-auto px-4 py-3 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700"
-          >
+          <Button type="button" variant="success" onClick={() => setMostrarAbertura(true)} className="w-full sm:w-auto">
             Abrir caixa
-          </button>
+          </Button>
         )}
         {caixaAberto && !mostrarFechamento && (
-          <button
-            type="button"
-            onClick={() => setMostrarFechamento(true)}
-            className="w-full sm:w-auto px-4 py-3 rounded-xl bg-amber-600 text-white font-semibold hover:bg-amber-700"
-          >
+          <Button type="button" variant="primary" onClick={() => setMostrarFechamento(true)} className="w-full sm:w-auto">
             Fechar caixa
-          </button>
+          </Button>
         )}
       </div>
 
       {mostrarAbertura && (
-        <form
-          onSubmit={handleAbrirCaixa}
-          className="mb-6 p-6 bg-white rounded-xl border-2 border-amber-200"
-        >
-          <h3 className="text-lg font-semibold text-amber-900 mb-4">Abrir caixa</h3>
+        <Card>
+        <form onSubmit={handleAbrirCaixa}>
+          <h3 className="text-lg font-semibold text-ink-900 mb-4 font-display">Abrir caixa</h3>
           <div className="flex flex-col sm:flex-row gap-4 sm:items-end flex-wrap">
             <div className="w-full sm:w-auto">
-              <label className="block text-sm font-medium mb-1">Valor inicial (R$)</label>
+              <FieldLabel htmlFor="valor-inicial">Valor inicial (R$)</FieldLabel>
               <input
+                id="valor-inicial"
                 type="text"
                 inputMode="decimal"
                 value={valorInicial}
                 onChange={(e) => setValorInicial(normalizarDecimalInput(e.target.value))}
                 placeholder="0,00"
-                className="px-4 py-3 rounded-lg border-2 border-amber-200 w-full sm:w-40"
+                className={`${FIELD_CONTROL} w-full sm:w-44`}
               />
             </div>
-            <button
-              type="submit"
-              className="w-full sm:w-auto px-4 py-3 rounded-xl bg-green-600 text-white font-semibold"
-            >
+            <Button type="submit" variant="success" className="w-full sm:w-auto">
               Confirmar abertura
-            </button>
-            <button
-              type="button"
-              onClick={() => setMostrarAbertura(false)}
-              className="w-full sm:w-auto px-4 py-3 rounded-xl bg-stone-200"
-            >
+            </Button>
+            <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={() => setMostrarAbertura(false)}>
               Cancelar
-            </button>
+            </Button>
           </div>
         </form>
+        </Card>
       )}
 
       {mostrarFechamento && (
-        <form
-          onSubmit={handleFecharCaixa}
-          className="mb-6 p-6 bg-white rounded-xl border-2 border-amber-200"
-        >
-          <h3 className="text-lg font-semibold text-amber-900 mb-4">Fechar caixa</h3>
-          <div className="grid gap-3 mb-4">
+        <Card>
+        <form onSubmit={handleFecharCaixa}>
+          <h3 className="text-lg font-semibold text-ink-900 mb-4 font-display">Fechar caixa</h3>
+          <div className="grid gap-3 mb-5 text-ink-800 text-sm sm:text-base">
             <p>Valor inicial: R$ {(caixa.valorInicial || 0).toFixed(2)}</p>
             <p>Total dinheiro hoje: R$ {totais.totalDinheiro.toFixed(2)}</p>
             <p>Total cartão hoje: R$ {totais.totalCartao.toFixed(2)}</p>
             <p>Total PIX hoje: R$ {totais.totalPix.toFixed(2)}</p>
-            <p className="font-bold">
+            <p className="font-bold text-ink-900">
               Total esperado em caixa: R$ {totalEsperado.toFixed(2)}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 sm:items-end flex-wrap">
             <div className="w-full sm:w-auto">
-              <label className="block text-sm font-medium mb-1">Valor contado (R$)</label>
+              <FieldLabel htmlFor="valor-contado">Valor contado (R$)</FieldLabel>
               <input
+                id="valor-contado"
                 type="text"
                 inputMode="decimal"
                 value={valorContado}
                 onChange={(e) => setValorContado(normalizarDecimalInput(e.target.value))}
                 placeholder="0,00"
-                className="px-4 py-3 rounded-lg border-2 border-amber-200 w-full sm:w-40"
+                className={`${FIELD_CONTROL} w-full sm:w-44`}
               />
             </div>
             {valorContado && (
               <p
                 className={`font-bold ${
-                  diferenca >= 0 ? 'text-green-700' : 'text-red-700'
+                  diferenca >= 0 ? 'text-emerald-700' : 'text-red-700'
                 }`}
               >
                 Diferença: R$ {diferenca.toFixed(2)}
               </p>
             )}
-            <button
-              type="submit"
-              className="w-full sm:w-auto px-4 py-3 rounded-xl bg-amber-600 text-white font-semibold"
-            >
+            <Button type="submit" variant="primary" className="w-full sm:w-auto">
               Confirmar fechamento
-            </button>
-            <button
-              type="button"
-              onClick={() => setMostrarFechamento(false)}
-              className="w-full sm:w-auto px-4 py-3 rounded-xl bg-stone-200"
-            >
+            </Button>
+            <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={() => setMostrarFechamento(false)}>
               Cancelar
-            </button>
+            </Button>
           </div>
         </form>
+        </Card>
       )}
 
       {/* Totais do dia */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Total vendido hoje</p>
-          <p className="text-2xl font-bold text-amber-800 tabular-nums">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <p className="text-sm font-medium text-ink-600 mb-1">Total vendido hoje</p>
+          <p className="text-2xl font-bold text-accent-800 tabular-nums font-display">
             R$ {totalHoje.toFixed(2)}
           </p>
-        </div>
-        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Dinheiro</p>
-          <p className="text-2xl font-bold text-amber-800 tabular-nums">
+        </Card>
+        <Card>
+          <p className="text-sm font-medium text-ink-600 mb-1">Dinheiro</p>
+          <p className="text-2xl font-bold text-accent-800 tabular-nums font-display">
             R$ {totais.totalDinheiro.toFixed(2)}
           </p>
-        </div>
-        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Cartão</p>
-          <p className="text-2xl font-bold text-amber-800 tabular-nums">
+        </Card>
+        <Card>
+          <p className="text-sm font-medium text-ink-600 mb-1">Cartão</p>
+          <p className="text-2xl font-bold text-accent-800 tabular-nums font-display">
             R$ {totais.totalCartao.toFixed(2)}
           </p>
-        </div>
-        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">PIX</p>
-          <p className="text-2xl font-bold text-amber-800 tabular-nums">
+        </Card>
+        <Card>
+          <p className="text-sm font-medium text-ink-600 mb-1">PIX</p>
+          <p className="text-2xl font-bold text-accent-800 tabular-nums font-display">
             R$ {totais.totalPix.toFixed(2)}
           </p>
-        </div>
+        </Card>
       </div>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Valor inicial do caixa</p>
-          <p className="text-2xl font-bold text-amber-800 tabular-nums">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <p className="text-sm font-medium text-ink-600 mb-1">Valor inicial do caixa</p>
+          <p className="text-2xl font-bold text-accent-800 tabular-nums font-display">
             R$ {Number(caixa.valorInicial || 0).toFixed(2)}
           </p>
-        </div>
-        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Vendas em dinheiro (caixa atual)</p>
-          <p className="text-2xl font-bold text-amber-800 tabular-nums">
+        </Card>
+        <Card className="sm:col-span-2">
+          <p className="text-sm font-medium text-ink-600 mb-1">Vendas em dinheiro (caixa atual)</p>
+          <p className="text-2xl font-bold text-accent-800 tabular-nums font-display">
             R$ {totalVendasDinheiro.toFixed(2)}
           </p>
-        </div>
-        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Total sangrias</p>
-          <p className="text-2xl font-bold text-red-700 tabular-nums">
+        </Card>
+        <Card>
+          <p className="text-sm font-medium text-ink-600 mb-1">Total sangrias</p>
+          <p className="text-2xl font-bold text-red-700 tabular-nums font-display">
             R$ {totalSangriasCaixa.toFixed(2)}
           </p>
-        </div>
-        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Dinheiro líquido</p>
-          <p className="text-2xl font-bold text-green-700 tabular-nums">
+        </Card>
+        <Card>
+          <p className="text-sm font-medium text-ink-600 mb-1">Dinheiro líquido</p>
+          <p className="text-2xl font-bold text-emerald-700 tabular-nums font-display">
             R$ {dinheiroLiquido.toFixed(2)}
           </p>
-        </div>
+        </Card>
       </div>
 
-      <div className="mb-8 p-6 bg-white rounded-xl border-2 border-amber-200 shadow-sm">
-        <h3 className="text-lg font-semibold text-amber-900 mb-4">Sangria de Caixa</h3>
+      <Card>
+        <h3 className="text-lg font-semibold text-ink-900 mb-4 font-display">Sangria de caixa</h3>
         <form onSubmit={handleRegistrarSangria} className="flex flex-col sm:flex-row flex-wrap gap-3 sm:items-end mb-4">
           <div className="w-full sm:w-auto">
-            <label className="block text-sm font-medium mb-1">Valor (R$)</label>
+            <FieldLabel htmlFor="valor-sangria">Valor (R$)</FieldLabel>
             <input
+              id="valor-sangria"
               type="text"
               inputMode="decimal"
               value={valorSangria}
               onChange={(e) => setValorSangria(normalizarDecimalInput(e.target.value))}
               placeholder="0,00"
-              className="px-4 py-3 rounded-lg border-2 border-amber-200 w-full sm:w-40"
+              className={`${FIELD_CONTROL} w-full sm:w-44`}
               disabled={!caixaAberto || !isAdmin || registrandoSangria}
             />
           </div>
           <div className="w-full sm:min-w-[260px] sm:flex-1">
-            <label className="block text-sm font-medium mb-1">Motivo (opcional)</label>
+            <FieldLabel htmlFor="motivo-sangria">Motivo (opcional)</FieldLabel>
             <input
+              id="motivo-sangria"
               type="text"
               value={motivoSangria}
               onChange={(e) => setMotivoSangria(e.target.value)}
               placeholder="Ex: retirada para cofre"
-              className="w-full px-4 py-3 rounded-lg border-2 border-amber-200"
+              className={FIELD_CONTROL}
               disabled={!caixaAberto || !isAdmin || registrandoSangria}
             />
           </div>
-          <button
+          <Button
             type="submit"
+            variant="danger"
             disabled={!caixaAberto || !isAdmin || registrandoSangria}
-            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-50"
+            className="w-full sm:w-auto"
           >
-            {registrandoSangria ? 'Registrando...' : 'Registrar Sangria'}
-          </button>
+            {registrandoSangria ? 'Registrando...' : 'Registrar sangria'}
+          </Button>
         </form>
 
         {!isAdmin && (
@@ -666,43 +655,43 @@ export default function Caixa() {
         )}
 
         {sangrias.length === 0 ? (
-          <p className="text-sm text-stone-500">Nenhuma sangria registrada para este caixa.</p>
+          <p className="text-sm text-ink-600">Nenhuma sangria registrada para este caixa.</p>
         ) : (
           <ul className="space-y-2">
             {sangrias.map((sangria) => (
               <li
                 key={sangria.id}
-                className="p-3 rounded-lg border border-amber-200 bg-amber-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+                className="p-3 rounded-2xl border border-stone-200/80 bg-accent-50/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
               >
                 <div>
-                  <p className="font-semibold text-amber-900">
+                  <p className="font-semibold text-ink-900">
                     R$ {Number(sangria.valor || 0).toFixed(2)}
                   </p>
-                  <p className="text-sm text-stone-600">
+                  <p className="text-sm text-ink-600">
                     {sangria.motivo || 'Sem motivo informado'}
                   </p>
-                  <p className="text-xs text-stone-500">
+                  <p className="text-xs text-ink-500">
                     Operador: {sangria.operadorNome || sangria.operadorId}
                   </p>
                 </div>
-                <p className="text-xs text-stone-500">
+                <p className="text-xs text-ink-500">
                   {formatarData(sangria.createdAt || sangria.createdAtIso)}
                 </p>
               </li>
             ))}
           </ul>
         )}
-      </div>
+      </Card>
 
       {/* Pendentes de Pagamento */}
-      <h3 className="text-lg font-semibold text-amber-900 mb-4">
-        Mesas no Caixa
+      <h3 className="text-lg font-semibold text-ink-900 mb-4 font-display">
+        Mesas no caixa
       </h3>
-      <div className="mb-8 space-y-4">
+      <div className="space-y-4">
         {comandasPendentes.length === 0 ? (
-          <div className="py-8 text-center bg-white rounded-xl border-2 border-dashed border-amber-200">
-            <p className="text-stone-500">Nenhuma mesa disponível no caixa.</p>
-          </div>
+          <Card className="border-dashed py-10 text-center">
+            <p className="text-ink-600">Nenhuma mesa disponível no caixa.</p>
+          </Card>
         ) : (
           comandasPendentes.map((comanda) => {
             const total =
@@ -713,26 +702,26 @@ export default function Caixa() {
                 0
               )
             return (
-              <div
+              <Card
                 key={comanda.id}
-                className="bg-white rounded-xl border-2 border-amber-300 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                className="border-accent-200/60 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 !p-6"
               >
                 <div>
-                  <h4 className="text-lg font-bold text-amber-900">
+                  <h4 className="text-lg font-bold text-ink-900 font-display">
                     {comanda.identificacao}
                   </h4>
-                  <p className="text-xs text-stone-500 mt-1">
+                  <p className="text-xs text-ink-600 mt-1">
                     Status: {comanda.status === 'aguardando_pagamento' ? 'Aguardando pagamento' : 'Aberta'}
                   </p>
                   {comanda.itens && comanda.itens.length > 0 && (
-                    <ul className="mt-2 text-sm text-stone-600 space-y-0.5">
+                    <ul className="mt-2 text-sm text-ink-600 space-y-0.5">
                       {comanda.itens.slice(0, 3).map((item) => (
                         <li key={item.id}>
                           {formatarQuantidadeItem(item)} {item.nome}
                         </li>
                       ))}
                       {comanda.itens.length > 3 && (
-                        <li className="text-stone-400">
+                        <li className="text-ink-400">
                           +{comanda.itens.length - 3} itens
                         </li>
                       )}
@@ -740,11 +729,12 @@ export default function Caixa() {
                   )}
                 </div>
                 <div className="flex w-full sm:w-auto flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                  <p className="text-xl font-bold text-amber-800 tabular-nums">
+                  <p className="text-xl font-bold text-accent-800 tabular-nums font-display">
                     R$ {total.toFixed(2)}
                   </p>
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
                     onClick={() => {
                       if (comandaEdicaoId === comanda.id) {
                         limparEdicaoComanda()
@@ -757,28 +747,29 @@ export default function Caixa() {
                       setPesoFrioComandaInput('100')
                       setPesoFrioComandaUnidade('g')
                     }}
-                    className="w-full sm:w-auto px-4 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-700"
+                    className="w-full sm:w-auto"
                   >
                     {comandaEdicaoId === comanda.id ? 'Fechar edição' : 'Editar pedido'}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="success"
                     onClick={() => setComandaPagamento(comanda)}
-                    className="w-full sm:w-auto px-6 py-3 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700"
+                    className="w-full sm:w-auto"
                   >
                     {comanda.status === 'aberta' ? 'Enviar e cobrar' : 'Cobrar'}
-                  </button>
+                  </Button>
                 </div>
 
                 {comandaEdicaoId === comanda.id && (
-                  <div className="w-full sm:basis-full mt-2 p-4 rounded-lg border border-amber-200 bg-amber-50">
-                    <p className="text-sm font-semibold text-amber-900 mb-3">
+                  <div className="w-full sm:basis-full mt-2 p-5 rounded-2xl border border-stone-200/80 bg-accent-50/50">
+                    <p className="text-sm font-semibold text-ink-900 mb-3">
                       Editar pedido antes da cobrança
                     </p>
 
                     {comandaEmEdicao?.itens?.length ? (
                       <div className="space-y-2 mb-4">
-                        <p className="text-xs text-stone-500">Use o botão X para cancelar item da mesa.</p>
+                        <p className="text-xs text-ink-600">Use o botão X para cancelar item da mesa.</p>
                         {comandaEmEdicao.itens.map((item) => (
                           <ItemRow
                             key={item.id}
@@ -789,7 +780,7 @@ export default function Caixa() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-stone-600 mb-4">
+                      <p className="text-sm text-ink-600 mb-4">
                         Pedido sem itens no momento.
                       </p>
                     )}
@@ -798,7 +789,7 @@ export default function Caixa() {
                       <select
                         value={produtoComandaSelecionado}
                         onChange={(e) => setProdutoComandaSelecionado(e.target.value)}
-                        className="w-full sm:w-auto sm:min-w-[180px] px-3 py-2 rounded-lg border-2 border-amber-200"
+                        className={`${FIELD_CONTROL} w-full sm:w-auto sm:min-w-[180px] !py-2.5 text-sm`}
                       >
                         <option value="">Produto...</option>
                         {produtosOrdenados.map((p) => (
@@ -814,14 +805,14 @@ export default function Caixa() {
                         value={quantidadeComanda}
                         onChange={(e) => setQuantidadeComanda(normalizarQuantidadeInput(e.target.value))}
                         onBlur={() => setQuantidadeComanda(String(quantidadeParaNumero(quantidadeComanda)))}
-                        className="w-full sm:w-20 px-3 py-2 rounded-lg border-2 border-amber-200"
+                        className={`${FIELD_CONTROL} w-full sm:w-24 !py-2.5 text-sm font-mono`}
                       />
                       {comandaEhFrios && (
                         <>
                           <select
                             value={tipoFrioComanda}
                             onChange={(e) => setTipoFrioComanda(e.target.value)}
-                            className="w-full sm:w-auto px-3 py-2 rounded-lg border-2 border-amber-200"
+                            className={`${FIELD_CONTROL} w-full sm:w-auto !py-2.5 text-sm`}
                           >
                             {tiposFrios.map((tipo) => (
                               <option key={tipo} value={tipo}>
@@ -836,89 +827,80 @@ export default function Caixa() {
                             onChange={(e) =>
                               setPesoFrioComandaInput(e.target.value.replace(/[^\d,.]/g, ''))
                             }
-                            className="w-full sm:w-24 px-3 py-2 rounded-lg border-2 border-amber-200"
+                            className={`${FIELD_CONTROL} w-full sm:w-28 !py-2.5 text-sm font-mono`}
                           />
                           <select
                             value={pesoFrioComandaUnidade}
                             onChange={(e) => setPesoFrioComandaUnidade(e.target.value)}
-                            className="w-full sm:w-auto px-3 py-2 rounded-lg border-2 border-amber-200"
+                            className={`${FIELD_CONTROL} w-full sm:w-auto !py-2.5 text-sm`}
                           >
                             <option value="g">g</option>
                             <option value="kg">kg</option>
                           </select>
                         </>
                       )}
-                      <button
+                      <Button
                         type="button"
+                        variant="success"
+                        size="sm"
                         onClick={handleAdicionarItemComanda}
                         disabled={!produtoComandaSelecionado}
-                        className="w-full sm:w-auto px-4 py-2 rounded-lg bg-green-600 text-white font-semibold disabled:opacity-50"
+                        className="w-full sm:w-auto"
                       >
                         + Adicionar item
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
-              </div>
+              </Card>
             )
           })
         )}
       </div>
 
       {/* Vendas Finalizadas */}
-      <h3 className="text-lg font-semibold text-amber-900 mb-4">
-        Vendas Finalizadas
+      <h3 className="text-lg font-semibold text-ink-900 mb-4 font-display">
+        Vendas finalizadas
       </h3>
       <div className="space-y-4">
         {vendasOrdenadas.length === 0 ? (
-          <div className="py-12 text-center bg-white rounded-xl border-2 border-dashed border-amber-200">
-            <p className="text-stone-500">Nenhuma venda registrada hoje.</p>
-          </div>
+          <Card className="border-dashed py-14 text-center">
+            <p className="text-ink-600">Nenhuma venda registrada hoje.</p>
+          </Card>
         ) : (
           vendasOrdenadas.map((venda) => (
-            <div
-              key={venda.id}
-              className="bg-white rounded-xl border-2 border-amber-200 p-6 shadow-sm"
-            >
+            <Card key={venda.id}>
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                 <div>
-                  <h3 className="text-lg font-bold text-amber-900">
+                  <h3 className="text-lg font-bold text-ink-900 font-display">
                     {venda.identificacao}
                   </h3>
-                  <p className="text-sm text-stone-500">{formatarData(venda.data)}</p>
+                  <p className="text-sm text-ink-600">{formatarData(venda.data)}</p>
                   {venda.metodoPagamento && (
-                    <p className="text-sm text-amber-700 mt-1">{venda.metodoPagamento}</p>
+                    <p className="text-sm text-accent-800 mt-1">{venda.metodoPagamento}</p>
                   )}
                   {venda.metodoPagamento?.toLowerCase().includes('dinheiro') &&
                     (venda.valorRecebido != null || venda.troco != null) && (
-                      <p className="text-sm text-stone-600 mt-1">
+                      <p className="text-sm text-ink-600 mt-1">
                         Recebido: R$ {(venda.valorRecebido || 0).toFixed(2)} | Troco: R${' '}
                         {(venda.troco || 0).toFixed(2)}
                       </p>
                     )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-xl font-bold text-amber-800 tabular-nums">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xl font-bold text-accent-800 tabular-nums font-display">
                     R$ {(venda.total || 0).toFixed(2)}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => handleCancelarVenda(venda.id)}
-                    className="px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700"
-                  >
+                  <Button type="button" variant="danger" size="sm" onClick={() => handleCancelarVenda(venda.id)}>
                     Cancelar compra
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setVendaAdicionarItem(venda)}
-                    className="px-3 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700"
-                  >
-                    + Adicionar Item
-                  </button>
+                  </Button>
+                  <Button type="button" variant="primary" size="sm" onClick={() => setVendaAdicionarItem(venda)}>
+                    + Adicionar item
+                  </Button>
                 </div>
               </div>
               {venda.itens && venda.itens.length > 0 && (
-                <ul className="space-y-1 text-sm text-stone-600 border-t border-amber-100 pt-4">
+                <ul className="space-y-1 text-sm text-ink-600 border-t border-stone-200/80 pt-4">
                   {venda.itens.map((item) => (
                     <li key={item.id} className="flex justify-between gap-2">
                       <span>
@@ -934,13 +916,13 @@ export default function Caixa() {
               )}
 
               {vendaAdicionarItem?.id === venda.id && (
-                <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
-                  <p className="text-sm font-semibold mb-2">Adicionar item à venda</p>
+                <div className="mt-4 p-5 bg-accent-50/50 rounded-2xl border border-stone-200/80">
+                  <p className="text-sm font-semibold mb-2 text-ink-900">Adicionar item à venda</p>
                   <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 items-stretch sm:items-end">
                     <select
                       value={produtoSelecionado}
                       onChange={(e) => setProdutoSelecionado(e.target.value)}
-                      className="w-full sm:w-auto sm:min-w-[180px] px-3 py-2 rounded-lg border-2 border-amber-200"
+                      className={`${FIELD_CONTROL} w-full sm:w-auto sm:min-w-[180px] !py-2.5 text-sm`}
                     >
                       <option value="">Produto...</option>
                       {produtosOrdenados.map((p) => (
@@ -956,14 +938,14 @@ export default function Caixa() {
                       value={quantidade}
                       onChange={(e) => setQuantidade(normalizarQuantidadeInput(e.target.value))}
                       onBlur={() => setQuantidade(String(quantidadeParaNumero(quantidade)))}
-                      className="w-full sm:w-20 px-3 py-2 rounded-lg border-2 border-amber-200"
+                      className={`${FIELD_CONTROL} w-full sm:w-24 !py-2.5 text-sm font-mono`}
                     />
                     {vendaEhFrios && (
                       <>
                         <select
                           value={tipoFrioVenda}
                           onChange={(e) => setTipoFrioVenda(e.target.value)}
-                          className="w-full sm:w-auto px-3 py-2 rounded-lg border-2 border-amber-200"
+                          className={`${FIELD_CONTROL} w-full sm:w-auto !py-2.5 text-sm`}
                         >
                           {tiposFrios.map((tipo) => (
                             <option key={tipo} value={tipo}>
@@ -976,28 +958,33 @@ export default function Caixa() {
                           inputMode="decimal"
                           value={pesoFrioVendaInput}
                           onChange={(e) => setPesoFrioVendaInput(e.target.value.replace(/[^\d,.]/g, ''))}
-                          className="w-full sm:w-24 px-3 py-2 rounded-lg border-2 border-amber-200"
+                          className={`${FIELD_CONTROL} w-full sm:w-28 !py-2.5 text-sm font-mono`}
                         />
                         <select
                           value={pesoFrioVendaUnidade}
                           onChange={(e) => setPesoFrioVendaUnidade(e.target.value)}
-                          className="w-full sm:w-auto px-3 py-2 rounded-lg border-2 border-amber-200"
+                          className={`${FIELD_CONTROL} w-full sm:w-auto !py-2.5 text-sm`}
                         >
                           <option value="g">g</option>
                           <option value="kg">kg</option>
                         </select>
                       </>
                     )}
-                    <button
+                    <Button
                       type="button"
+                      variant="success"
+                      size="sm"
                       onClick={handleAdicionarItemVenda}
                       disabled={!produtoSelecionado}
-                      className="w-full sm:w-auto px-4 py-2 rounded-lg bg-green-600 text-white font-semibold disabled:opacity-50"
+                      className="w-full sm:w-auto"
                     >
                       Adicionar
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="w-full sm:w-auto"
                       onClick={() => {
                         setVendaAdicionarItem(null)
                         setProdutoSelecionado('')
@@ -1006,14 +993,13 @@ export default function Caixa() {
                         setPesoFrioVendaInput('100')
                         setPesoFrioVendaUnidade('g')
                       }}
-                      className="w-full sm:w-auto px-4 py-2 rounded-lg bg-stone-200"
                     >
                       Cancelar
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
-            </div>
+            </Card>
           ))
         )}
       </div>

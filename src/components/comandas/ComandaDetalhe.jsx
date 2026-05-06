@@ -9,6 +9,9 @@ import {
 import { useToast } from '../../contexts/ToastContext'
 import { playSomAcao, playSomErro } from '../../utils/sons'
 import ProductImage from '../ProductImage'
+import { Button } from '../ui/Button'
+import { Card } from '../ui/Card'
+import { FieldLabel, FIELD_CONTROL } from '../ui/Input'
 
 export default function ComandaDetalhe({
   comanda,
@@ -160,43 +163,40 @@ export default function ComandaDetalhe({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <button
+        <Button
           type="button"
+          variant="subtle"
           onClick={onVoltar}
-          className={`flex items-center gap-2 rounded-lg bg-amber-100 text-amber-800 font-semibold hover:bg-amber-200 transition-colors touch-manipulation ${
-            isMobile || isTablet ? 'px-6 py-4 text-lg min-h-[52px]' : 'px-4 py-2'
-          }`}
+          className={isMobile || isTablet ? '!px-6 !py-4 text-lg min-h-[52px]' : ''}
         >
           ← Voltar
-        </button>
-        <h2 className={`font-bold text-amber-900 ${isMobile ? 'text-xl' : 'text-2xl'}`}>
+        </Button>
+        <h2 className={`font-display font-semibold text-ink-900 ${isMobile ? 'text-xl' : 'text-2xl'}`}>
           {comanda.identificacao}
         </h2>
       </div>
 
-      <div className="bg-white rounded-xl border-2 border-amber-200 p-6 shadow-sm">
-        <div className={`mb-4 ${isMobile ? 'space-y-3' : 'flex items-center justify-between'}`}>
-          <h3 className="text-lg font-semibold text-amber-900">Itens</h3>
+      <Card>
+        <div className={`mb-5 ${isMobile ? 'space-y-3' : 'flex items-center justify-between'}`}>
+          <h3 className="text-lg font-semibold text-ink-900">Itens</h3>
           {produtos.length > 0 && (
-            <button
+            <Button
               type="button"
+              variant="primary"
               onClick={() => setMostrarAdicionar(!mostrarAdicionar)}
-              className={`rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700 transition-colors touch-manipulation min-h-[44px] ${
-                isMobile || isTablet ? 'w-full px-4 py-3 text-lg' : 'px-4 py-2'
-              }`}
+              className={isMobile || isTablet ? 'w-full min-h-[44px]' : ''}
             >
               {mostrarAdicionar ? 'Fechar adição de produto' : '+ Adicionar produto'}
-            </button>
+            </Button>
           )}
         </div>
 
         {mostrarAdicionar && produtos.length > 0 && (
-          <div className="mb-6 p-4 bg-amber-50 rounded-lg border border-amber-200 space-y-3">
+          <div className="mb-6 p-5 bg-accent-50/60 rounded-2xl border border-accent-200/70 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-amber-900 mb-1">
-                Buscar e selecionar item do cardápio
-              </label>
+              <FieldLabel htmlFor="busca-item-mesa">Buscar e selecionar item do cardápio</FieldLabel>
               <input
+                id="busca-item-mesa"
                 type="search"
                 value={produtoSelecionado ? (produtos.find((p) => String(p.id) === String(produtoSelecionado))?.nome ?? '') : buscaProduto}
                 onChange={(e) => {
@@ -206,10 +206,10 @@ export default function ComandaDetalhe({
                 }}
                 onFocus={() => produtoSelecionado && setProdutoSelecionado('')}
                 placeholder="Digite o nome do produto..."
-                className="w-full px-4 py-3 rounded-lg border-2 border-amber-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none text-amber-900"
+                className={FIELD_CONTROL}
               />
               {produtosFiltrados.length > 0 && !produtoSelecionado && (buscaProduto.length > 0 || produtosFiltrados.length <= 10) && (
-                <div className="mt-1 max-h-52 overflow-y-auto rounded-xl border border-amber-200/90 bg-white shadow-sm">
+                <div className="mt-2 max-h-52 overflow-y-auto rounded-2xl border border-stone-200/90 bg-[#fffdfb] shadow-soft">
                   {produtosFiltrados.map((p) => {
                     const disponivel = estoqueDisponivel(p.id) >= 1
                     const ehFriosItem =
@@ -228,12 +228,12 @@ export default function ComandaDetalhe({
                           }
                         }}
                         disabled={!disponivel}
-                        className={`flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm hover:bg-amber-50/80 disabled:opacity-50 disabled:cursor-not-allowed first:pt-3 last:pb-3 ${disponivel ? 'cursor-pointer' : ''}`}
+                        className={`flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm hover:bg-accent-50/60 disabled:opacity-50 disabled:cursor-not-allowed first:pt-3 last:pb-3 ${disponivel ? 'cursor-pointer' : ''}`}
                       >
                         <ProductImage src={p.imagem} alt="" variant="thumb" />
-                        <span className="min-w-0 flex-1 leading-snug text-amber-900">
+                        <span className="min-w-0 flex-1 leading-snug text-ink-900">
                           <span className="font-medium">{p.nome}</span>{' '}
-                          <span className="text-stone-500 font-normal">
+                          <span className="text-ink-600 font-normal">
                             {ehFriosItem
                               ? `· R$ ${Number(p.preco).toFixed(2)} / 100 g`
                               : `· R$ ${Number(p.preco).toFixed(2)}`}{' '}
@@ -246,7 +246,7 @@ export default function ComandaDetalhe({
                 </div>
               )}
               {termoBusca && produtosFiltrados.length === 0 && (
-                <p className="mt-1 text-sm text-stone-500">Nenhum produto encontrado</p>
+                <p className="mt-1 text-sm text-ink-600">Nenhum produto encontrado</p>
               )}
             </div>
             {produtoSelecionado && (
@@ -259,11 +259,11 @@ export default function ComandaDetalhe({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {selecionadoEhFrios ? (
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-amber-900 mb-1">Tipo de frio</label>
+                  <label className="block text-sm font-medium text-ink-800 mb-1">Tipo de frio</label>
                   <select
                     value={tipoFrio}
                     onChange={(e) => setTipoFrio(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg border-2 border-amber-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none text-amber-900"
+                    className={FIELD_CONTROL}
                   >
                     {tiposFrios.map((tipo) => (
                       <option key={tipo} value={tipo}>
@@ -277,12 +277,12 @@ export default function ComandaDetalhe({
                       inputMode="decimal"
                       value={pesoFrioInput}
                       onChange={(e) => setPesoFrioInput(e.target.value.replace(/[^\d,.]/g, ''))}
-                      className="w-full px-4 py-3 rounded-lg border-2 border-amber-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none text-amber-900 font-mono tabular-nums"
+                      className={`${FIELD_CONTROL} font-mono tabular-nums`}
                     />
                     <select
                       value={pesoFrioUnidade}
                       onChange={(e) => setPesoFrioUnidade(e.target.value)}
-                      className="px-3 py-3 rounded-lg border-2 border-amber-200"
+                      className={`${FIELD_CONTROL} !w-auto shrink-0`}
                     >
                       <option value="g">g</option>
                       <option value="kg">kg</option>
@@ -291,7 +291,7 @@ export default function ComandaDetalhe({
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-medium text-amber-900 mb-1">
+                  <label className="block text-sm font-medium text-ink-800 mb-1">
                     Quantidade
                   </label>
                   <input
@@ -304,21 +304,18 @@ export default function ComandaDetalhe({
                       const quantidadeNum = Math.max(1, parseInt(quantidade, 10) || 1)
                       setQuantidade(String(quantidadeNum))
                     }}
-                    className="w-full px-4 py-3 rounded-lg border-2 border-amber-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none text-amber-900 font-mono tabular-nums"
+                    className={`${FIELD_CONTROL} font-mono tabular-nums`}
                   />
                 </div>
               )}
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <button
-                type="button"
-                onClick={handleAdicionarProduto}
-                className="px-4 py-3 rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700 touch-manipulation"
-              >
+            <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+              <Button type="button" variant="primary" onClick={handleAdicionarProduto}>
                 Adicionar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={() => {
                   setProdutoSelecionado('')
                   setBuscaProduto('')
@@ -327,12 +324,12 @@ export default function ComandaDetalhe({
                   setPesoFrioInput('100')
                   setPesoFrioUnidade('g')
                 }}
-                className="px-4 py-3 rounded-lg bg-stone-200 text-stone-700 font-semibold hover:bg-stone-300 touch-manipulation"
               >
                 Trocar produto
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={() => {
                   setMostrarAdicionar(false)
                   setBuscaProduto('')
@@ -342,10 +339,9 @@ export default function ComandaDetalhe({
                   setPesoFrioInput('100')
                   setPesoFrioUnidade('g')
                 }}
-                className="px-4 py-3 rounded-lg bg-stone-200 text-stone-700 font-semibold hover:bg-stone-300 touch-manipulation"
               >
                 Cancelar
-              </button>
+              </Button>
             </div>
             </>
             )}
@@ -354,7 +350,7 @@ export default function ComandaDetalhe({
 
         <div className="space-y-2">
           {(!comanda.itens || comanda.itens.length === 0) ? (
-            <p className="py-8 text-center text-stone-500">
+            <p className="py-8 text-center text-ink-600">
               {produtos.length === 0
                 ? 'Cadastre produtos primeiro para adicionar à mesa.'
                 : 'Nenhum item na mesa. Clique em "Adicionar produto" para começar.'}
@@ -371,24 +367,24 @@ export default function ComandaDetalhe({
           )}
         </div>
 
-        <div className="mt-6 pt-4 border-t-2 border-amber-200 flex justify-end">
-          <p className="text-xl font-bold text-amber-900 tabular-nums">
+        <div className="mt-6 pt-4 border-t border-stone-200/90 flex justify-end">
+          <p className="text-xl font-bold text-ink-900 tabular-nums font-display">
             Total: R$ {total.toFixed(2)}
           </p>
         </div>
-      </div>
+      </Card>
 
-      <button
+      <Button
         type="button"
+        variant="primary"
+        size="lg"
         onClick={handleEnviarParaCaixa}
-        className={`w-full rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-700 transition-colors touch-manipulation ${
-          isMobile || isTablet
-            ? 'px-8 py-5 text-xl min-h-[64px]'
-            : 'sm:w-auto px-8 py-4 text-lg min-h-[56px]'
-        }`}
+        className={
+          isMobile || isTablet ? 'w-full !text-xl min-h-[64px]' : 'sm:w-auto w-full'
+        }
       >
         Enviar para Caixa
-      </button>
+      </Button>
     </div>
   )
 }

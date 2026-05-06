@@ -4,6 +4,8 @@ import Sidebar, { navItems } from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import { useResponsive } from '../hooks/useResponsive'
 import { useAuth } from '../contexts/AuthContext'
+import { Button } from '../components/ui/Button'
+import { BRAND_NAME } from '../config/brand'
 
 export default function MainLayout() {
   const { isMobile } = useResponsive()
@@ -27,56 +29,51 @@ export default function MainLayout() {
 
   if (isMobile) {
     return (
-      <div className="h-screen bg-amber-50/80 overflow-hidden flex flex-col">
-        <header className="h-14 bg-amber-800 text-white px-3 flex items-center justify-between gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => setMenuAberto(true)}
-            className="px-3 py-2 rounded-lg bg-amber-900/60 text-amber-100 text-sm font-semibold"
-          >
+      <div className="h-screen bg-app flex flex-col overflow-hidden">
+        <header className="h-[3.625rem] bg-[#fdfaf5]/95 backdrop-blur-md border-b border-stone-200/75 px-3 flex items-center justify-between gap-3 shrink-0 shadow-soft">
+          <Button type="button" variant="ink" size="sm" onClick={() => setMenuAberto(true)}>
             Menu
-          </button>
-          <div className="flex items-center gap-2 min-w-0">
+          </Button>
+          <div className="flex items-center gap-2 min-w-0 flex-1 justify-center">
             <img
               src="/logo-restaurante.svg"
-              alt="Sua logo aqui"
-              className="h-9 w-9 object-contain rounded-full"
+              alt={BRAND_NAME}
+              className="h-9 w-9 object-contain rounded-2xl ring-1 ring-stone-200/80 shrink-0"
             />
-            <h1 className="text-base font-bold truncate">{tituloAtual}</h1>
+            <h1 className="text-[0.9375rem] font-semibold font-display text-ink-900 truncate">
+              {tituloAtual}
+            </h1>
           </div>
-          <button
-            type="button"
-            onClick={logout}
-            className="px-3 py-2 rounded-lg text-amber-100 bg-amber-900/60 text-sm font-semibold"
-          >
+          <Button type="button" variant="secondary" size="sm" onClick={logout} className="shrink-0">
             Sair
-          </button>
+          </Button>
         </header>
         {menuAberto && (
-          <div className="fixed inset-0 z-50">
+          <div className="fixed inset-0 z-50 animate-fade-in">
             <button
               type="button"
               aria-label="Fechar menu"
-              className="absolute inset-0 bg-black/40"
+              className="absolute inset-0 bg-ink-900/40 backdrop-blur-[2px]"
               onClick={() => setMenuAberto(false)}
             />
-            <aside className="relative h-full w-72 max-w-[85vw] bg-amber-900 text-amber-50 p-4 shadow-xl">
-              <p className="text-sm text-amber-200 mb-3">Navegação</p>
-              <nav className="space-y-2">
+            <aside className="relative h-full w-[min(20rem,calc(100vw-3rem))] bg-[#fdfaf5] shadow-soft-xl border-r border-stone-200/75 p-5 animate-slide-up">
+              <p className="text-xs uppercase tracking-[0.14em] text-accent-700 font-semibold mb-5">Navegação</p>
+              <nav className="space-y-1">
                 {itensVisiveis.map((item) => (
                   <NavLink
                     key={item.to}
                     to={item.to}
                     end={item.to === '/'}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${
-                        isActive
-                          ? 'bg-amber-600 text-white shadow-lg'
-                          : 'text-amber-100 hover:bg-amber-800/70 hover:text-white'
-                      }`
+                      `flex items-center gap-3 px-4 py-3.5 rounded-2xl font-semibold transition-all duration-200 border ` +
+                      (isActive
+                        ? 'bg-accent-600 text-white shadow-soft-lg border-accent-700/20'
+                        : 'text-ink-800 border-transparent hover:bg-stone-100 hover:text-ink-900')
                     }
                   >
-                    <span aria-hidden>{item.icon}</span>
+                    <span aria-hidden className="text-xl">
+                      {item.icon}
+                    </span>
                     {item.label}
                   </NavLink>
                 ))}
@@ -85,7 +82,7 @@ export default function MainLayout() {
           </div>
         )}
         <main className="flex-1 overflow-auto min-h-0">
-          <div className="p-4 pb-24">
+          <div className="p-4 pb-24 max-w-[100vw]">
             <Outlet />
           </div>
         </main>
@@ -94,12 +91,14 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="flex h-screen bg-amber-50/80 overflow-hidden">
+    <div className="flex h-screen bg-app overflow-hidden">
       <Sidebar />
-      <div className="flex flex-col flex-1 min-w-0">
+      <div className="flex flex-col flex-1 min-w-0 bg-app">
         <Topbar />
-        <main className="flex-1 overflow-auto p-4 md:p-6 bg-stone-100/50">
-          <Outlet />
+        <main className="flex-1 overflow-auto px-4 py-6 md:px-8 md:py-9">
+          <div className="max-w-[1600px] mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

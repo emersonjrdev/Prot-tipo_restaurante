@@ -11,7 +11,7 @@ export default function ProductImage({
   className = '',
 }) {
   const frame =
-    'relative aspect-[4/3] overflow-hidden rounded-xl bg-amber-100 ring-1 ring-amber-200/70'
+    'relative aspect-[4/3] overflow-hidden rounded-xl bg-stone-100 ring-1 ring-stone-200/80'
   const width =
     variant === 'card'
       ? 'w-full'
@@ -22,7 +22,7 @@ export default function ProductImage({
   if (!src) {
     return (
       <div
-        className={`${frame} ${width} flex items-center justify-center text-xs font-medium text-amber-500 ${className}`}
+        className={`${frame} ${width} flex items-center justify-center text-xs font-medium text-ink-500 ${className}`}
       >
         Sem foto
       </div>

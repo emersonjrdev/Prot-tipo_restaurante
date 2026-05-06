@@ -21,8 +21,12 @@ function RotasProtegidas() {
 
   if (carregando) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-amber-50">
-        <p className="text-amber-900 font-semibold">Carregando...</p>
+      <div className="min-h-screen bg-app flex flex-col items-center justify-center gap-4">
+        <div
+          className="h-11 w-11 rounded-full border-2 border-accent-200 border-t-accent-600 animate-spin"
+          aria-hidden
+        />
+        <p className="text-ink-800 font-semibold text-sm tracking-wide">Carregando...</p>
       </div>
     )
   }

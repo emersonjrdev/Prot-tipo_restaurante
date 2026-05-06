@@ -3,6 +3,9 @@ import { useEstoque } from '../hooks/useEstoque'
 import { useProdutos } from '../hooks/usePDV'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { FieldLabel, FIELD_CONTROL } from '../components/ui/Input'
 import { playSomAcao, playSomErro } from '../utils/sons'
 
 export default function Estoque() {
@@ -104,128 +107,114 @@ export default function Estoque() {
   )
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-amber-900 mb-6">Estoque</h2>
-
-      {isAdmin && (
-        <div className="mb-6">
-          <button
-            type="button"
-            onClick={handleLimparEstoqueNaoFixos}
-            disabled={limpandoEstoque}
-            className="w-full sm:w-auto px-4 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-50"
-          >
-            {limpandoEstoque
-              ? 'Limpando estoque...'
-              : 'Zerar todo o estoque'}
-          </button>
+    <div className="animate-fade-in space-y-8">
+      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.12em] text-accent-700">Operação</p>
+          <h2 className="font-display text-3xl font-semibold text-ink-900 tracking-tight mt-1">Estoque</h2>
         </div>
-      )}
+        {isAdmin && (
+          <Button
+            type="button"
+            variant="danger"
+            disabled={limpandoEstoque}
+            onClick={handleLimparEstoqueNaoFixos}
+            className="w-full sm:w-auto"
+          >
+            {limpandoEstoque ? 'Limpando estoque...' : 'Zerar todo o estoque'}
+          </Button>
+        )}
+      </header>
 
       {estoqueBaixoOrdenado.length > 0 && (
-        <div className="mb-6 p-4 rounded-xl bg-amber-100 border-2 border-amber-300">
-          <p className="font-semibold text-amber-900">
+        <Card className="border-amber-200/80 bg-amber-50/50">
+          <p className="font-semibold text-ink-900">
             ⚠️ {estoqueBaixoOrdenado.length} produto(s) com estoque baixo (menos de 5 unidades)
           </p>
-          <p className="text-sm text-amber-900 mt-1">
+          <p className="text-sm text-ink-700 mt-2 leading-relaxed">
             {estoqueBaixoOrdenado.map((p) => `${p.nome} (${p.estoque ?? 0})`).join(', ')}
           </p>
-        </div>
+        </Card>
       )}
 
       {produtosParaExibir.length === 0 ? (
-        <div className="py-16 text-center bg-white rounded-xl border-2 border-dashed border-amber-200">
-          <p className="text-stone-500">Nenhum produto cadastrado.</p>
-          <p className="text-stone-500 text-sm mt-2">
-            Cadastre produtos em Produtos para gerenciar o estoque.
-          </p>
-        </div>
+        <Card className="border-dashed py-16 text-center">
+          <p className="text-ink-600">Nenhum produto cadastrado.</p>
+          <p className="text-ink-500 text-sm mt-2">Cadastre produtos na secção Produtos.</p>
+        </Card>
       ) : (
         <>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-amber-900 mb-1">Buscar produto</label>
+          <div>
+            <FieldLabel htmlFor="busca-estoque">Buscar produto</FieldLabel>
             <input
+              id="busca-estoque"
               type="search"
               value={buscaProduto}
               onChange={(e) => setBuscaProduto(e.target.value)}
               placeholder="Digite o nome do produto..."
-              className="w-full px-4 py-3 rounded-lg border-2 border-amber-200 focus:border-amber-500 outline-none text-amber-900"
+              className={FIELD_CONTROL}
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {produtosFiltrados.map((produto) => {
-            const baixo = (produto.estoque ?? 0) < 5
-            const isEditando = editando?.id === produto.id
+            {produtosFiltrados.map((produto) => {
+              const baixo = (produto.estoque ?? 0) < 5
+              const isEditando = editando?.id === produto.id
 
-            return (
-              <div
-                key={produto.id}
-                className={`p-5 rounded-xl bg-white border-2 transition-colors ${
-                  baixo ? 'border-amber-400 bg-amber-50/50' : 'border-amber-200'
-                }`}
-              >
-                <div className="flex justify-between items-start gap-4 mb-3">
-                  <div>
-                    <h3 className="text-lg font-bold text-amber-900">{produto.nome}</h3>
-                    <p className="text-2xl font-bold text-amber-800 tabular-nums">
-                      Estoque: {produto.estoque ?? 0}
-                    </p>
-                  </div>
-                </div>
-
-                {isEditando ? (
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={valorEntrada}
-                      onChange={(e) => setValorEntrada(sanitizarInteiro(e.target.value))}
-                      placeholder="Quantidade"
-                      className="w-full px-3 py-2 rounded-lg border-2 border-amber-200"
-                    />
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleSalvarEstoque(produto.id)}
-                        className="flex-1 py-3 rounded-lg bg-amber-600 text-white font-semibold"
-                      >
-                        Definir
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleEntrada(produto.id)}
-                        className="flex-1 py-3 rounded-lg bg-green-600 text-white font-semibold"
-                      >
-                        + Entrada
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditando(null)
-                          setValorEntrada('')
-                        }}
-                        className="py-3 px-3 rounded-lg bg-stone-200"
-                      >
-                        Cancelar
-                      </button>
+              return (
+                <Card
+                  key={produto.id}
+                  className={baixo ? 'border-amber-300/90 bg-amber-50/30' : ''}
+                >
+                  <div className="flex justify-between items-start gap-4 mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-ink-900">{produto.nome}</h3>
+                      <p className="text-2xl font-bold text-accent-800 tabular-nums mt-1">
+                        Estoque: {produto.estoque ?? 0}
+                      </p>
                     </div>
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setEditando(produto)}
-                    className="w-full py-2 rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700"
-                  >
-                    Atualizar estoque
-                  </button>
-                )}
-              </div>
-            )
-          })}
+
+                  {isEditando ? (
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={valorEntrada}
+                        onChange={(e) => setValorEntrada(sanitizarInteiro(e.target.value))}
+                        placeholder="Quantidade"
+                        className={FIELD_CONTROL}
+                      />
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button type="button" variant="primary" className="flex-1" onClick={() => handleSalvarEstoque(produto.id)}>
+                          Definir
+                        </Button>
+                        <Button type="button" variant="success" className="flex-1" onClick={() => handleEntrada(produto.id)}>
+                          + Entrada
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => {
+                            setEditando(null)
+                            setValorEntrada('')
+                          }}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button type="button" variant="primary" className="w-full" onClick={() => setEditando(produto)}>
+                      Atualizar estoque
+                    </Button>
+                  )}
+                </Card>
+              )
+            })}
           </div>
           {produtosFiltrados.length === 0 && termoBusca && (
-            <p className="mt-4 text-center text-stone-500">Nenhum produto encontrado para &quot;{buscaProduto}&quot;</p>
+            <p className="text-center text-ink-600">Nenhum produto encontrado para &quot;{buscaProduto}&quot;</p>
           )}
         </>
       )}

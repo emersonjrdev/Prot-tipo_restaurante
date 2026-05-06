@@ -2,9 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html {
+    @apply font-sans text-ink-900 antialiased;
+  }
+}
+
 html,
 body {
-  background-color: #fafafa;
+  background-color: #f7f0e6;
+}
+
+@layer utilities {
+  /* Pergaminho / linho: tons quentes + veios discretos (sem pesar no desempenho). */
+  .bg-app {
+    background-color: #f7f0e6;
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280' viewBox='0 0 280 280'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23a)' opacity='0.05'/%3E%3C/svg%3E"),
+      radial-gradient(ellipse 120% 85% at 50% -25%, rgba(154, 52, 18, 0.08), transparent 55%),
+      radial-gradient(ellipse 65% 45% at 100% 5%, rgba(180, 83, 9, 0.06), transparent 48%),
+      radial-gradient(ellipse 50% 40% at 0% 90%, rgba(120, 53, 15, 0.05), transparent 50%),
+      repeating-linear-gradient(
+        -14deg,
+        transparent 0px,
+        transparent 3px,
+        rgba(139, 90, 43, 0.028) 3px,
+        rgba(139, 90, 43, 0.028) 4px,
+        transparent 4px,
+        transparent 54px
+      ),
+      linear-gradient(180deg, #fcf7ef 0%, #f5ede2 52%, #efe4d6 100%);
+  }
+
+  /* Madeira escura + braseiro suave — login. */
+  .bg-app-login {
+    background-color: #140a07;
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cpath d='M28 2L54 28L28 54L2 28Z' fill='none' stroke='%23fcd9c9' stroke-width='0.35' opacity='0.09'/%3E%3C/svg%3E"),
+      radial-gradient(ellipse 100% 75% at 50% -15%, rgba(194, 65, 12, 0.32), transparent 58%),
+      radial-gradient(ellipse 55% 45% at 0% 100%, rgba(154, 52, 18, 0.25), transparent 52%),
+      radial-gradient(ellipse 50% 40% at 100% 80%, rgba(120, 53, 15, 0.2), transparent 50%),
+      linear-gradient(168deg, #2f1812 0%, #1a0e0b 42%, #0f0806 100%);
+  }
 }
 
 #splash {
@@ -13,7 +52,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f4f4f5;
+  background-color: #f7f0e6;
+  background-image:
+    radial-gradient(ellipse 100% 80% at 50% -20%, rgba(154, 52, 18, 0.07), transparent 55%),
+    linear-gradient(180deg, #fcf7ef 0%, #efe4d6 100%);
   z-index: 9999;
   transition: opacity 0.3s ease;
 }

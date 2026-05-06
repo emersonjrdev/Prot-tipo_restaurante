@@ -1,4 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { FIELD_CONTROL } from '../components/ui/Input'
 import ComandaCard from '../components/comandas/ComandaCard'
 import ComandaDetalhe from '../components/comandas/ComandaDetalhe'
 import { criarComanda, excluirComandasAbertas } from '../services/storage'
@@ -154,7 +157,12 @@ export default function ComandasPage() {
     const comandaAtual = comandas.find((c) => c.id === comandaSelecionada.id) || comandaSelecionada
     return (
       <div className={paddingClass}>
-        {!isMobile && <h2 className="text-2xl font-bold text-amber-900 mb-6">Mesas</h2>}
+        {!isMobile && (
+          <header className="mb-6">
+            <p className="text-sm font-semibold uppercase tracking-[0.12em] text-accent-700">Salão</p>
+            <h2 className="font-display text-3xl font-semibold text-ink-900 tracking-tight mt-1">Mesas</h2>
+          </header>
+        )}
         <ComandaDetalhe
           comanda={comandaAtual}
           produtos={produtos}
@@ -174,8 +182,11 @@ export default function ComandasPage() {
         className={`flex flex-col gap-4 mb-6 ${isMobile ? 'gap-6' : ''}`}
       >
         {!isMobile && (
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="text-2xl font-bold text-amber-900">Mesas</h2>
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <header>
+              <p className="text-sm font-semibold uppercase tracking-[0.12em] text-accent-700">Salão</p>
+              <h2 className="font-display text-3xl font-semibold text-ink-900 tracking-tight mt-1">Mesas</h2>
+            </header>
           </div>
         )}
 
@@ -184,53 +195,45 @@ export default function ComandasPage() {
           placeholder="Buscar mesa..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          className="w-full px-4 py-4 rounded-xl border-2 border-amber-200 text-lg focus:border-amber-500 outline-none"
+          className={`${FIELD_CONTROL} text-lg py-4`}
         />
 
-        <button
+        <Button
           type="button"
+          size={isMobile || isTablet ? 'lg' : 'lg'}
           onClick={abrirModalNovaComanda}
-          className={`w-full rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-700 transition-colors touch-manipulation shadow-lg ${
-            isMobile || isTablet
-              ? 'py-6 text-2xl min-h-[72px]'
-              : 'px-6 py-4 text-lg min-h-[56px]'
-          }`}
+          className={`w-full ${isMobile || isTablet ? '!text-xl min-h-[72px]' : ''}`}
         >
-          + Nova Mesa
-        </button>
+          + Nova mesa
+        </Button>
 
         {isAdmin && (
-          <button
+          <Button
             type="button"
+            variant="danger"
             onClick={handleExcluirComandasAbertas}
-              className={`w-full rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors touch-manipulation shadow-lg ${
-              isMobile || isTablet
-                ? 'py-5 text-xl min-h-[64px]'
-                : 'px-6 py-3 text-base min-h-[48px]'
-            }`}
+            className={`w-full ${isMobile || isTablet ? '!text-xl min-h-[64px]' : ''}`}
           >
             Excluir mesas abertas (admin)
-          </button>
+          </Button>
         )}
       </div>
 
       {comandasFiltradas.length === 0 ? (
-        <div className="py-16 text-center bg-white rounded-xl border-2 border-dashed border-amber-200">
-          <p className="text-stone-500 text-lg mb-4">
+        <Card className="border-dashed py-16 text-center">
+          <p className="text-ink-600 text-lg mb-4">
             {busca.trim() ? 'Nenhuma mesa encontrada.' : 'Nenhuma mesa aberta.'}
           </p>
           {!busca.trim() && (
-            <button
+            <Button
               type="button"
               onClick={abrirModalNovaComanda}
-              className={`rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700 transition-colors touch-manipulation ${
-                isMobile ? 'px-8 py-4 text-xl' : 'px-6 py-3'
-              }`}
+              size={isMobile ? 'lg' : 'md'}
             >
               Abrir primeira mesa
-            </button>
+            </Button>
           )}
-        </div>
+        </Card>
       ) : (
         <div
           className={`grid gap-4 ${
@@ -253,13 +256,15 @@ export default function ComandasPage() {
       )}
 
       {mostrarModalNovaComanda && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white border-2 border-amber-200 p-6 shadow-xl">
-            <h3 className="text-xl font-bold text-amber-900 mb-4">Nova mesa</h3>
-            <label className="block text-sm font-medium text-amber-900 mb-2">
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-ink-900/40 backdrop-blur-[2px] animate-fade-in">
+          <Card className="w-full max-w-md animate-slide-up shadow-soft-xl">
+            <h3 className="font-display text-xl font-semibold text-ink-900 mb-1">Nova mesa</h3>
+            <p className="text-xs uppercase tracking-[0.12em] text-accent-700 font-semibold mb-4">Registo</p>
+            <label className="block text-sm font-medium text-ink-800 mb-2" htmlFor="numero-mesa-modal">
               Número da mesa
             </label>
             <input
+              id="numero-mesa-modal"
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
@@ -267,32 +272,28 @@ export default function ComandasPage() {
               value={numeroNovaMesa}
               onChange={(e) => setNumeroNovaMesa(e.target.value.replace(/\D/g, ''))}
               placeholder="001 a 100"
-              className="w-full px-4 py-3 rounded-lg border-2 border-amber-200 focus:border-amber-500 outline-none"
+              className={FIELD_CONTROL}
             />
-            <p className="text-xs text-stone-500 mt-2">Aceita apenas números de 1 até 100.</p>
-            <div className="mt-5 flex gap-2 justify-end">
-              <button
-                type="button"
-                onClick={fecharModalNovaComanda}
-                className="px-4 py-2 rounded-lg bg-stone-200 text-stone-700 font-semibold hover:bg-stone-300"
-              >
+            <p className="text-xs text-ink-600 mt-2">Aceita apenas números de 1 até 100.</p>
+            <div className="mt-6 flex gap-3 justify-end flex-wrap">
+              <Button type="button" variant="secondary" onClick={fecharModalNovaComanda}>
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                onClick={handleCriarNovaComanda}
+                variant="primary"
                 disabled={!numeroNovaMesa.trim() || criandoComanda}
-                className="px-4 py-2 rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700 disabled:opacity-50"
+                onClick={handleCriarNovaComanda}
               >
                 {criandoComanda ? 'Criando...' : 'Criar'}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {isMobile && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-amber-100/95 border-t-2 border-amber-200 safe-area-pb">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#fdfaf5]/96 backdrop-blur-md border-t border-stone-200/85 safe-area-pb shadow-soft-lg">
           <input
             ref={bipadorRef}
             type="text"
@@ -300,7 +301,7 @@ export default function ComandasPage() {
             placeholder="Bipador / Busca rápida..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="w-full px-4 py-4 rounded-xl border-2 border-amber-300 text-lg focus:border-amber-500 outline-none"
+            className={`${FIELD_CONTROL} text-lg py-4`}
           />
         </div>
       )}

@@ -1,98 +1,61 @@
 import { useDashboard } from '../hooks/usePDV'
+import { StatCard } from '../components/ui/StatCard'
 
 export default function Dashboard() {
   const [resumo] = useDashboard()
   const produtosBaixo = resumo.produtosEstoqueBaixo || []
 
+  const estoqueHint =
+    produtosBaixo.length > 0
+      ? produtosBaixo.map((p) => `${p.nome} (${p.estoque})`).join(', ')
+      : null
+
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-amber-900 mb-6">Dashboard</h2>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
-        <div className="p-4 md:p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Total vendido hoje</p>
-          <p className="text-2xl font-bold text-amber-800 tabular-nums">
-            R$ {resumo.totalHoje.toFixed(2)}
-          </p>
-        </div>
-        <div className="p-4 md:p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Dinheiro hoje</p>
-          <p className="text-2xl font-bold text-amber-800 tabular-nums">
-            R$ {(resumo.totalDinheiro ?? 0).toFixed(2)}
-          </p>
-        </div>
-        <div className="p-4 md:p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Cartão hoje</p>
-          <p className="text-2xl font-bold text-amber-800 tabular-nums">
-            R$ {(resumo.totalCartao ?? 0).toFixed(2)}
-          </p>
-        </div>
-        <div className="p-4 md:p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">PIX hoje</p>
-          <p className="text-2xl font-bold text-amber-800 tabular-nums">
-            R$ {(resumo.totalPix ?? 0).toFixed(2)}
-          </p>
-        </div>
-        <div className="p-4 md:p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Sangrias</p>
-          <p className="text-2xl font-bold text-red-700 tabular-nums">
-            R$ {(resumo.totalSangrias ?? 0).toFixed(2)}
-          </p>
-        </div>
-        <div className="p-4 md:p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Dinheiro líquido</p>
-          <p className="text-2xl font-bold text-green-700 tabular-nums">
-            R$ {(resumo.dinheiroLiquido ?? 0).toFixed(2)}
-          </p>
-        </div>
-        <div className="p-4 md:p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Comandas abertas</p>
-          <p className="text-2xl font-bold text-amber-800 tabular-nums">
-            {resumo.comandasAbertas}
-          </p>
-        </div>
-        <div className="p-4 md:p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Aguardando pagamento</p>
-          <p className="text-2xl font-bold text-amber-800 tabular-nums">
-            {resumo.comandasAguardandoPagamento ?? 0}
-          </p>
-        </div>
-        <div className="p-4 md:p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Vendas pagas hoje</p>
-          <p className="text-2xl font-bold text-amber-800 tabular-nums">
-            {resumo.vendasFinalizadasHoje}
-          </p>
-        </div>
-        <div className="p-4 md:p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Status caixa</p>
-          <p
-            className={`text-lg font-bold ${
-              resumo.caixaAberto ? 'text-green-700' : 'text-amber-700'
-            }`}
-          >
-            {resumo.caixaAberto ? 'Aberto' : 'Fechado'}
-          </p>
-        </div>
-        <div className="p-4 md:p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-          <p className="text-sm font-medium text-stone-500 mb-1">Estoque baixo (&lt;5)</p>
-          <p
-            className={`text-2xl font-bold tabular-nums ${
-              (resumo.estoqueBaixo ?? 0) > 0 ? 'text-amber-600' : 'text-amber-800'
-            }`}
-          >
-            {resumo.estoqueBaixo ?? 0}
-          </p>
-          {produtosBaixo.length > 0 && (
-            <p className="mt-2 text-xs text-stone-600">
-              {produtosBaixo.map((p) => `${p.nome} (${p.estoque})`).join(', ')}
-            </p>
-          )}
-        </div>
-        <div className="p-4 md:p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm sm:col-span-2">
-          <p className="text-sm font-medium text-stone-500 mb-1">Total histórico</p>
-          <p className="text-2xl font-bold text-amber-800 tabular-nums">
-            R$ {resumo.totalHistorico.toFixed(2)}
-          </p>
-        </div>
+    <div className="space-y-8 animate-fade-in">
+      <header className="space-y-2">
+        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-accent-700">Visão geral</p>
+        <h2 className="font-display text-3xl sm:text-4xl font-semibold text-ink-900 tracking-tight">
+          Dashboard
+        </h2>
+        <p className="text-ink-600 max-w-2xl leading-relaxed">
+          Resumo financeiro e operacional do dia — panorama rápido para o salão encaixar com a cozinha.
+        </p>
+      </header>
+
+      <div className="grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+        <StatCard label="Total vendido hoje" value={`R$ ${resumo.totalHoje.toFixed(2)}`} />
+        <StatCard label="Dinheiro hoje" value={`R$ ${(resumo.totalDinheiro ?? 0).toFixed(2)}`} />
+        <StatCard label="Cartão hoje" value={`R$ ${(resumo.totalCartao ?? 0).toFixed(2)}`} />
+        <StatCard label="PIX hoje" value={`R$ ${(resumo.totalPix ?? 0).toFixed(2)}`} />
+        <StatCard
+          label="Sangrias"
+          variant="danger"
+          value={`R$ ${(resumo.totalSangrias ?? 0).toFixed(2)}`}
+        />
+        <StatCard
+          label="Dinheiro líquido"
+          variant="success"
+          value={`R$ ${(resumo.dinheiroLiquido ?? 0).toFixed(2)}`}
+        />
+        <StatCard label="Mesas abertas" value={String(resumo.comandasAbertas)} />
+        <StatCard
+          label="Aguardando pagamento"
+          value={String(resumo.comandasAguardandoPagamento ?? 0)}
+          variant="warning"
+        />
+        <StatCard label="Vendas pagas hoje" value={String(resumo.vendasFinalizadasHoje)} />
+        <StatCard
+          label="Caixa"
+          value={resumo.caixaAberto ? 'Aberto' : 'Fechado'}
+          variant={resumo.caixaAberto ? 'success' : 'default'}
+        />
+        <StatCard
+          label="Estoque baixo (<5)"
+          value={String(resumo.estoqueBaixo ?? 0)}
+          variant={(resumo.estoqueBaixo ?? 0) > 0 ? 'warning' : 'default'}
+          hint={estoqueHint}
+        />
+        <StatCard label="Total histórico" value={`R$ ${resumo.totalHistorico.toFixed(2)}`} className="sm:col-span-2" />
       </div>
     </div>
   )

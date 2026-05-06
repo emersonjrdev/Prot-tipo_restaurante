@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useCaixa } from '../hooks/usePDV'
+import { Card } from '../components/ui/Card'
 
 function formatarData(dataStr) {
   if (!dataStr) return '-'
@@ -39,58 +40,54 @@ export default function Financeiro() {
   }, [vendas])
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-amber-900 mb-6">Financeiro</h2>
+    <div className="space-y-8 animate-fade-in">
+      <header>
+        <p className="text-sm font-semibold uppercase tracking-[0.12em] text-accent-700">Resumo</p>
+        <h2 className="font-display text-3xl font-semibold text-ink-900 tracking-tight mt-1">Financeiro</h2>
+      </header>
 
-      <div className="mb-8 p-4 md:p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
-        <p className="text-sm font-medium text-stone-500 mb-1">
-          Faturamento total (histórico)
-        </p>
-        <p className="text-2xl font-bold text-amber-800 tabular-nums">
+      <Card>
+        <p className="text-sm font-medium text-ink-600 mb-1">Faturamento total (histórico)</p>
+        <p className="text-3xl font-bold text-accent-800 tabular-nums font-display">
           R$ {faturamentoTotal.toFixed(2)}
         </p>
-      </div>
+      </Card>
 
-      <h3 className="text-lg font-semibold text-amber-900 mb-4">
-        Histórico de vendas por dia
-      </h3>
+      <h3 className="text-lg font-semibold text-ink-900 font-display">Histórico de vendas por dia</h3>
       {grupos.length === 0 ? (
-        <div className="py-12 text-center bg-white rounded-xl border-2 border-dashed border-amber-200">
-          <p className="text-stone-500">Nenhuma venda registrada.</p>
-        </div>
+        <Card className="border-dashed py-12 text-center">
+          <p className="text-ink-600">Nenhuma venda registrada.</p>
+        </Card>
       ) : (
         <div className="space-y-6">
           {grupos.map((grupo) => (
-            <div
-              key={grupo.data}
-              className="bg-white rounded-xl border-2 border-amber-200 p-4 md:p-6 shadow-sm"
-            >
+            <Card key={grupo.data}>
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
-                <h4 className="text-lg font-bold text-amber-900">
+                <h4 className="text-lg font-bold text-ink-900 font-display">
                   {grupo.data}
                 </h4>
-                <p className="text-xl font-bold text-amber-800 tabular-nums">
+                <p className="text-xl font-bold text-accent-800 tabular-nums font-display">
                   R$ {grupo.total.toFixed(2)}
                 </p>
               </div>
               <ul className="space-y-2">
                 {grupo.vendas.map((venda) => (
-                  <li key={venda.id} className="py-2 border-b border-amber-50 last:border-0">
-                    <span className="text-stone-700">
+                  <li key={venda.id} className="py-2 border-b border-stone-100 last:border-0">
+                    <span className="text-ink-800">
                       {venda.identificacao}
                       {venda.metodoPagamento && (
-                        <span className="text-stone-500 text-sm ml-2">
+                        <span className="text-ink-600 text-sm ml-2">
                           ({venda.metodoPagamento})
                         </span>
                       )}
                     </span>
-                    <span className="block sm:inline font-semibold text-amber-800 tabular-nums">
+                    <span className="block sm:inline font-semibold text-accent-800 tabular-nums sm:float-right">
                       R$ {(venda.total || 0).toFixed(2)}
                     </span>
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           ))}
         </div>
       )}

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useRelatorios } from '../hooks/useRelatorios'
+import { Card } from '../components/ui/Card'
 import { useToast } from '../contexts/ToastContext'
 import { limparDadosCaixa } from '../services/caixaService'
 import { playSomErro, playSomVenda } from '../utils/sons'
@@ -63,25 +64,27 @@ export default function RelatorioCaixa() {
   const ordenados = [...relatorios].sort((a, b) => new Date(b.data) - new Date(a.data))
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-amber-900 mb-6">Relatório de Caixa</h2>
-      <p className="text-stone-600 mb-6">
-        Histórico de fechamentos de caixa com totais por método de pagamento.
-      </p>
+    <div className="space-y-8 animate-fade-in">
+      <header>
+        <p className="text-sm font-semibold uppercase tracking-[0.12em] text-accent-700">Auditoria</p>
+        <h2 className="font-display text-3xl font-semibold text-ink-900 tracking-tight mt-1">
+          Relatório de caixa
+        </h2>
+        <p className="text-ink-600 mt-2 max-w-2xl">
+          Histórico de fechamentos com totais por método de pagamento.
+        </p>
+      </header>
 
       {ordenados.length === 0 ? (
-        <div className="py-16 text-center bg-white rounded-xl border-2 border-dashed border-amber-200">
-          <p className="text-stone-500">Nenhum fechamento de caixa registrado.</p>
-        </div>
+        <Card className="border-dashed py-16 text-center">
+          <p className="text-ink-600">Nenhum fechamento de caixa registrado.</p>
+        </Card>
       ) : (
         <div className="space-y-6">
           {ordenados.map((r) => (
-            <div
-              key={r.id}
-              className="bg-white rounded-xl border-2 border-amber-200 p-4 md:p-6 shadow-sm"
-            >
+            <Card key={r.id}>
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
-                <h3 className="text-lg font-bold text-amber-900">
+                <h3 className="text-lg font-bold text-ink-900 font-display">
                   {formatarData(r.data)}
                 </h3>
                 <span
@@ -98,35 +101,35 @@ export default function RelatorioCaixa() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                 <div>
-                  <p className="text-stone-500">Valor inicial</p>
-                  <p className="font-bold tabular-nums">R$ {(r.valorInicial || 0).toFixed(2)}</p>
+                  <p className="text-ink-600">Valor inicial</p>
+                  <p className="font-bold tabular-nums text-ink-900">R$ {(r.valorInicial || 0).toFixed(2)}</p>
                 </div>
                 <div>
-                  <p className="text-stone-500">Total dinheiro</p>
-                  <p className="font-bold tabular-nums">R$ {(r.totalDinheiro || 0).toFixed(2)}</p>
+                  <p className="text-ink-600">Total dinheiro</p>
+                  <p className="font-bold tabular-nums text-ink-900">R$ {(r.totalDinheiro || 0).toFixed(2)}</p>
                 </div>
                 <div>
-                  <p className="text-stone-500">Total cartão</p>
-                  <p className="font-bold tabular-nums">R$ {(r.totalCartao || 0).toFixed(2)}</p>
+                  <p className="text-ink-600">Total cartão</p>
+                  <p className="font-bold tabular-nums text-ink-900">R$ {(r.totalCartao || 0).toFixed(2)}</p>
                 </div>
                 <div>
-                  <p className="text-stone-500">Total PIX</p>
-                  <p className="font-bold tabular-nums">R$ {(r.totalPix || 0).toFixed(2)}</p>
+                  <p className="text-ink-600">Total PIX</p>
+                  <p className="font-bold tabular-nums text-ink-900">R$ {(r.totalPix || 0).toFixed(2)}</p>
                 </div>
                 <div>
-                  <p className="text-stone-500">Total sangrias</p>
-                  <p className="font-bold tabular-nums">R$ {(r.totalSangrias || 0).toFixed(2)}</p>
+                  <p className="text-ink-600">Total sangrias</p>
+                  <p className="font-bold tabular-nums text-ink-900">R$ {(r.totalSangrias || 0).toFixed(2)}</p>
                 </div>
                 <div>
-                  <p className="text-stone-500">Dinheiro líquido</p>
-                  <p className="font-bold tabular-nums">R$ {(r.dinheiroLiquido || 0).toFixed(2)}</p>
+                  <p className="text-ink-600">Dinheiro líquido</p>
+                  <p className="font-bold tabular-nums text-ink-900">R$ {(r.dinheiroLiquido || 0).toFixed(2)}</p>
                 </div>
                 <div>
-                  <p className="text-stone-500">Valor contado</p>
-                  <p className="font-bold tabular-nums">R$ {(r.valorContado || 0).toFixed(2)}</p>
+                  <p className="text-ink-600">Valor contado</p>
+                  <p className="font-bold tabular-nums text-ink-900">R$ {(r.valorContado || 0).toFixed(2)}</p>
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

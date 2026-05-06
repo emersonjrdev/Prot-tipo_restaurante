@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { formatarCentavosInput, moedaInputParaNumero } from '../utils/moeda'
+import { Button } from './ui/Button'
 
 const METODOS = {
   D: { label: 'Dinheiro', key: 'D' },
@@ -70,49 +71,52 @@ export default function ModalPagamento({ total, onConfirmar, onCancelar }) {
     <div
       ref={overlayRef}
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 outline-none"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-ink-900/45 backdrop-blur-[2px] outline-none animate-fade-in"
       onKeyDown={handleKeyDown}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-pagamento-titulo"
     >
-      <div className="bg-white rounded-2xl shadow-2xl border-2 border-amber-200 w-full max-w-md p-6">
-        <h2 id="modal-pagamento-titulo" className="text-xl font-bold text-amber-900 mb-4">
+      <div className="relative w-full max-w-md rounded-[1.5rem] border border-stone-200/80 bg-[#fdfaf5] p-6 sm:p-8 shadow-soft-xl animate-slide-up">
+        <h2
+          id="modal-pagamento-titulo"
+          className="font-display text-xl sm:text-2xl font-semibold text-ink-900 mb-1"
+        >
           Pagamento
         </h2>
 
-        <p className="text-2xl font-bold text-amber-800 mb-6 tabular-nums">
+        <p className="text-xs uppercase tracking-[0.12em] text-accent-700 font-semibold mb-4">Concluir cobrança</p>
+
+        <p className="text-2xl font-bold text-ink-900 mb-6 tabular-nums">
           Total: R$ {total.toFixed(2)}
         </p>
 
-        <p className="text-sm text-stone-500 mb-3">
-          Atalhos: <kbd className="px-1.5 py-0.5 bg-amber-100 rounded">D</kbd> Dinheiro{' '}
-          <kbd className="px-1.5 py-0.5 bg-amber-100 rounded">C</kbd> Cartão{' '}
-          <kbd className="px-1.5 py-0.5 bg-amber-100 rounded">P</kbd> PIX
+        <p className="text-sm text-ink-600 mb-4">
+          Atalhos: <kbd className="px-2 py-1 bg-stone-100 rounded-lg text-ink-800 text-xs border border-stone-200/90">D</kbd>{' '}
+          Dinheiro{' '}
+          <kbd className="px-2 py-1 bg-stone-100 rounded-lg text-ink-800 text-xs border border-stone-200/90">C</kbd>{' '}
+          Cartão{' '}
+          <kbd className="px-2 py-1 bg-stone-100 rounded-lg text-ink-800 text-xs border border-stone-200/90">P</kbd>{' '}
+          PIX
         </p>
 
         <div className="flex flex-col sm:flex-row gap-2 mb-4">
           {Object.entries(METODOS).map(([key, m]) => (
-            <button
+            <Button
               key={key}
               type="button"
+              variant={metodo === key ? 'primary' : 'secondary'}
+              className="flex-1 sm:flex-1"
               onClick={() => setMetodo(key)}
-              className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                metodo === key
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-              }`}
             >
               {m.label}
-            </button>
+            </Button>
           ))}
         </div>
 
         {metodo === 'D' && (
-          <div className="space-y-2 mb-4">
-            <label className="block text-sm font-medium text-amber-900">
-              Valor recebido (R$)
-            </label>
+          <div className="space-y-2 mb-5">
+            <label className="block text-sm font-medium text-ink-800">Valor recebido (R$)</label>
             <input
               ref={inputRef}
               type="text"
@@ -120,38 +124,38 @@ export default function ModalPagamento({ total, onConfirmar, onCancelar }) {
               value={valorRecebido}
               onChange={(e) => setValorRecebido(formatarCentavosInput(e.target.value))}
               placeholder="0,00"
-              className="w-full px-4 py-3 rounded-lg border-2 border-amber-200 focus:border-amber-500 outline-none text-amber-900 font-mono text-xl"
+              className="w-full px-4 py-3.5 rounded-2xl border border-stone-200/90 focus:border-accent-500 focus:ring-4 focus:ring-accent-500/12 outline-none text-ink-900 font-mono text-xl transition-all"
             />
-            {valorRecebido && (
-              <p className="text-lg font-bold text-green-700 tabular-nums">
-                Troco: R$ {troco.toFixed(2)}
-              </p>
-            )}
+            {valorRecebido ? (
+              <p className="text-lg font-bold text-emerald-700 tabular-nums">Troco: R$ {troco.toFixed(2)}</p>
+            ) : null}
           </div>
         )}
 
-        {erro && (
-          <p role="alert" className="mb-4 p-3 rounded-lg bg-red-100 text-red-700">
+        {erro ? (
+          <p role="alert" className="mb-4 p-3.5 rounded-2xl bg-red-50 text-red-800 border border-red-200/80 text-sm">
             {erro}
           </p>
-        )}
+        ) : null}
 
-        <div className="flex flex-col-reverse sm:flex-row gap-2">
-          <button
+        <div className="flex flex-col-reverse sm:flex-row gap-3">
+          <Button
             type="button"
-            onClick={handleConfirmar}
-            disabled={metodo === 'D' && !valorRecebido}
-            className="flex-1 py-3 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Confirmar
-          </button>
-          <button
-            type="button"
+            variant="secondary"
+            className="flex-1"
             onClick={onCancelar}
-            className="px-4 py-3 rounded-xl bg-stone-200 text-stone-700 font-semibold hover:bg-stone-300"
           >
             Cancelar
-          </button>
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            className="flex-1 !bg-emerald-600 hover:!bg-emerald-700 border-emerald-700/20"
+            disabled={metodo === 'D' && !valorRecebido}
+            onClick={handleConfirmar}
+          >
+            Confirmar
+          </Button>
         </div>
       </div>
     </div>
