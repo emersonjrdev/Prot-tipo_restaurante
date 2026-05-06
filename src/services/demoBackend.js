@@ -104,11 +104,11 @@ function getDefaultState() {
   const usuarios = {}
   const a1 = gerarId()
   const a2 = gerarId()
-  usuarios[a1] = { id: a1, nome: 'admin', senha: 'admin123', perfil: 'admin', created_at: now }
+  usuarios[a1] = { id: a1, nome: 'gestor', senha: 'teste123', perfil: 'admin', created_at: now }
   usuarios[a2] = {
     id: a2,
-    nome: 'funcionario',
-    senha: 'func123',
+    nome: 'teste',
+    senha: 'teste123',
     perfil: 'funcionario',
     created_at: now,
   }
@@ -161,7 +161,22 @@ function getDefaultState() {
   }
 }
 
+function migrarUsuariosLegado(s) {
+  if (!s?.usuarios) return
+  for (const u of Object.values(s.usuarios)) {
+    const nome = String(u.nome || '').toLowerCase()
+    if (nome === 'admin' && String(u.senha) === 'admin123') {
+      u.nome = 'gestor'
+      u.senha = 'teste123'
+    } else if (nome === 'funcionario' && String(u.senha) === 'func123') {
+      u.nome = 'teste'
+      u.senha = 'teste123'
+    }
+  }
+}
+
 function migrateDemoState(s) {
+  migrarUsuariosLegado(s)
   if (!s?.produtos) return
   const precos = {
     [normalizarNomeProduto('Couvert')]: 18,

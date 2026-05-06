@@ -33,7 +33,7 @@ curl http://localhost:3001/health
 
 ### Auth
 - `POST /auth/login`
-  - body: `{ "nome": "admin", "senha": "admin123" }`
+  - body: `{ "nome": "gestor", "senha": "teste123" }` (ou `teste` / `teste123` para funcionário)
 
 ### Usuários
 - `GET /usuarios`

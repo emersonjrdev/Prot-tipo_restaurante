@@ -50,8 +50,8 @@ export default function Login({ onLogin }) {
           <form onSubmit={handleSubmit} className="space-y-5">
             {isDemoApiMode() && (
               <p className="text-sm text-amber-800 bg-amber-100/80 border border-amber-200 rounded-lg px-3 py-2">
-                Modo demonstração (sem servidor): use <strong>admin</strong> / <strong>admin123</strong> ou{' '}
-                <strong>funcionario</strong> / <strong>func123</strong>.
+                Modo demonstração (sem servidor): <strong>teste</strong> / <strong>teste123</strong> (mesas) ou{' '}
+                <strong>gestor</strong> / <strong>teste123</strong> (acesso completo).
               </p>
             )}
             {erro && (

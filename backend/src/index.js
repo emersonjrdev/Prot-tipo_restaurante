@@ -431,14 +431,14 @@ async function seedUsuarios() {
 
   const now = new Date().toISOString()
   await usuariosCol.add({
-    nome: 'admin',
-    senha: 'admin123',
+    nome: 'gestor',
+    senha: 'teste123',
     perfil: 'admin',
     created_at: now,
   })
   await usuariosCol.add({
-    nome: 'funcionario',
-    senha: 'func123',
+    nome: 'teste',
+    senha: 'teste123',
     perfil: 'funcionario',
     created_at: now,
   })
