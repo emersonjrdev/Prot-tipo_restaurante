@@ -1,0 +1,1030 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useCaixa } from '../hooks/useCaixa'
+import { useProdutos } from '../hooks/usePDV'
+import {
+  adicionarItem,
+  adicionarItemAVenda,
+  alterarQtd,
+  cancelarVendaFinalizada,
+  confirmarPagamento,
+  enviarParaCaixa,
+  removerItem,
+} from '../services/storage'
+import { useToast } from '../contexts/ToastContext'
+import { useAuth } from '../contexts/AuthContext'
+import { playSomVenda, playSomErro } from '../utils/sons'
+import ModalPagamento from '../components/ModalPagamento'
+import ItemRow from '../components/comandas/ItemRow'
+
+function formatarData(dataStr) {
+  if (!dataStr) return '-'
+  const d = new Date(dataStr)
+  return d.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function isHoje(dataStr) {
+  if (!dataStr) return false
+  const data = new Date(dataStr)
+  const hoje = new Date()
+  return (
+    data.getDate() === hoje.getDate() &&
+    data.getMonth() === hoje.getMonth() &&
+    data.getFullYear() === hoje.getFullYear()
+  )
+}
+
+function formatarQuantidadeItem(item) {
+  if (item?.unidadeMedida === 'gramas') {
+    return `${Number(item.pesoGramas || 0)}g`
+  }
+  return `${Number(item?.quantidade || 0)}x`
+}
+
+function nomeEhFrios(nome) {
+  return (
+    String(nome || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim() === 'frios'
+  )
+}
+
+function rotuloProdutoOption(p) {
+  const preco = Number(p?.preco ?? 0)
+  const precoTxt = nomeEhFrios(p?.nome) ? `${preco.toFixed(2)}/100 g` : preco.toFixed(2)
+  const est = Number(p?.estoque ?? 0)
+  const aviso = est < 1 ? ' (sem estoque)' : ''
+  return `${p?.nome ?? ''} — R$ ${precoTxt}${aviso}`
+}
+
+export default function Caixa() {
+  const [
+    vendas,
+    refresh,
+    {
+      comandasPendentes,
+      sangrias,
+      caixaAberto,
+      caixaAtual,
+      totais,
+      totalSangrias,
+      abrirCaixa,
+      fecharCaixa,
+      registrarSangria,
+      limparDadosCaixa,
+    },
+  ] = useCaixa()
+  const { usuario, isAdmin } = useAuth()
+  const [produtos] = useProdutos()
+  const [mostrarAbertura, setMostrarAbertura] = useState(false)
+  const [valorInicial, setValorInicial] = useState('')
+  const [mostrarFechamento, setMostrarFechamento] = useState(false)
+  const [valorContado, setValorContado] = useState('')
+  const [comandaPagamento, setComandaPagamento] = useState(null)
+  const [comandaEdicaoId, setComandaEdicaoId] = useState(null)
+  const [vendaAdicionarItem, setVendaAdicionarItem] = useState(null)
+  const [produtoSelecionado, setProdutoSelecionado] = useState('')
+  const [quantidade, setQuantidade] = useState('1')
+  const [tipoFrioVenda, setTipoFrioVenda] = useState('Presunto')
+  const [pesoFrioVendaInput, setPesoFrioVendaInput] = useState('100')
+  const [pesoFrioVendaUnidade, setPesoFrioVendaUnidade] = useState('g')
+  const [produtoComandaSelecionado, setProdutoComandaSelecionado] = useState('')
+  const [quantidadeComanda, setQuantidadeComanda] = useState('1')
+  const [tipoFrioComanda, setTipoFrioComanda] = useState('Presunto')
+  const [pesoFrioComandaInput, setPesoFrioComandaInput] = useState('100')
+  const [pesoFrioComandaUnidade, setPesoFrioComandaUnidade] = useState('g')
+  const [valorSangria, setValorSangria] = useState('')
+  const [motivoSangria, setMotivoSangria] = useState('')
+  const [registrandoSangria, setRegistrandoSangria] = useState(false)
+  const toast = useToast()
+
+  useEffect(() => {
+    function handleAtalhoSecretoExcluirDadosCaixa(event) {
+      // Atalho secreto: Ctrl + Shift + Alt + Delete
+      if (event.ctrlKey && event.shiftKey && event.altKey && event.key === 'Delete') {
+        event.preventDefault()
+        handleLimparDadosCaixa()
+      }
+    }
+
+    window.addEventListener('keydown', handleAtalhoSecretoExcluirDadosCaixa)
+    return () => window.removeEventListener('keydown', handleAtalhoSecretoExcluirDadosCaixa)
+  }, [])
+
+  const { totalHoje, vendasHoje } = useMemo(() => {
+    const doDia = vendas.filter((v) => isHoje(v.data))
+    const total = doDia.reduce((acc, v) => acc + (v.total || 0), 0)
+    return { totalHoje: total, vendasHoje: doDia }
+  }, [vendas])
+
+  const vendasOrdenadas = useMemo(
+    () => [...vendasHoje].sort((a, b) => new Date(b.data) - new Date(a.data)),
+    [vendasHoje]
+  )
+
+  const produtosOrdenados = useMemo(
+    () =>
+      produtos
+        .sort((a, b) =>
+          String(a?.nome || '').localeCompare(String(b?.nome || ''), 'pt-BR', {
+            sensitivity: 'base',
+          })
+        ),
+    [produtos]
+  )
+  const tiposFrios = ['Presunto', 'Queijo', 'Mortadela', 'Peito de Peru', 'Salame']
+  const produtoComandaObj = produtos.find((p) => String(p.id) === String(produtoComandaSelecionado))
+  const produtoVendaObj = produtos.find((p) => String(p.id) === String(produtoSelecionado))
+  const comandaEhFrios =
+    String(produtoComandaObj?.nome || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase() === 'frios'
+  const vendaEhFrios =
+    String(produtoVendaObj?.nome || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase() === 'frios'
+  const comandaEmEdicao = useMemo(
+    () => comandasPendentes.find((comanda) => comanda.id === comandaEdicaoId) || null,
+    [comandasPendentes, comandaEdicaoId]
+  )
+
+  function normalizarQuantidadeInput(valor) {
+    return String(valor || '').replace(/\D/g, '')
+  }
+
+  function normalizarDecimalInput(valor) {
+    const limpo = String(valor || '').replace(/[^\d,.]/g, '')
+    let resultado = ''
+    let separadorUsado = false
+    for (const ch of limpo) {
+      if ((ch === ',' || ch === '.') && !separadorUsado) {
+        resultado += ch
+        separadorUsado = true
+        continue
+      }
+      if (/\d/.test(ch)) resultado += ch
+    }
+    return resultado
+  }
+
+  function quantidadeParaNumero(valor) {
+    return Math.max(1, parseInt(String(valor || ''), 10) || 1)
+  }
+
+  async function handleAbrirCaixa(e) {
+    e?.preventDefault()
+    const v = parseFloat(valorInicial.replace(',', '.')) || 0
+    const r = await abrirCaixa(v)
+    if (r.sucesso) {
+      playSomVenda()
+      setMostrarAbertura(false)
+      setValorInicial('')
+      await refresh()
+      toast.show('Caixa aberto com sucesso!')
+    } else {
+      toast.show(r.erro || 'Erro ao abrir caixa', 'error')
+      playSomErro()
+    }
+  }
+
+  async function handleFecharCaixa(e) {
+    e?.preventDefault()
+    const v = parseFloat(valorContado.replace(',', '.')) || 0
+    const r = await fecharCaixa(v)
+    if (r.sucesso) {
+      playSomVenda()
+      setMostrarFechamento(false)
+      setValorContado('')
+      await refresh()
+      toast.show(`Caixa fechado. Diferença: R$ ${r.fechamento.diferenca.toFixed(2)}`)
+      if (r.avisoComandas) {
+        toast.show(r.avisoComandas, 'warning')
+      }
+    } else {
+      toast.show(r.erro || 'Erro ao fechar caixa', 'error')
+      playSomErro()
+    }
+  }
+
+  async function handleLimparDadosCaixa() {
+    const confirmou = window.confirm(
+      'Isso vai excluir o histórico de vendas e relatórios de fechamento do caixa. Deseja continuar?'
+    )
+    if (!confirmou) return
+
+    const confirmouNovamente = window.confirm(
+      'Confirma EXCLUIR os dados do caixa agora? Essa ação não pode ser desfeita.'
+    )
+    if (!confirmouNovamente) return
+
+    const resultado = await limparDadosCaixa()
+    if (resultado?.sucesso) {
+      playSomVenda()
+      await refresh()
+      toast.show('Dados do caixa excluídos com sucesso!')
+    } else {
+      playSomErro()
+      toast.show(resultado?.erro || 'Erro ao excluir dados do caixa', 'error')
+    }
+  }
+
+  async function handleConfirmarPagamento(metodoPagamento, valorRecebido, troco) {
+    if (!comandaPagamento) return
+    if (comandaPagamento.status === 'aberta') {
+      const enviada = await enviarParaCaixa(comandaPagamento.id)
+      if (!enviada) {
+        playSomErro()
+        toast.show('Não foi possível enviar mesa para o caixa', 'error')
+        return
+      }
+    }
+    const venda = await confirmarPagamento(
+      comandaPagamento.id,
+      metodoPagamento,
+      valorRecebido,
+      troco
+    )
+    if (venda) {
+      playSomVenda()
+      toast.show('Pagamento confirmado!')
+      setComandaPagamento(null)
+      await refresh()
+    } else {
+      playSomErro()
+      toast.show('Erro ao confirmar pagamento. Verifique o estoque.', 'error')
+    }
+  }
+
+  async function handleRegistrarSangria(e) {
+    e?.preventDefault()
+    if (!isAdmin) {
+      playSomErro()
+      toast.show('Apenas admin pode registrar sangria', 'error')
+      return
+    }
+    if (!caixaAberto || !caixaAtual?.caixaId) {
+      playSomErro()
+      toast.show('Abra o caixa para registrar sangria', 'error')
+      return
+    }
+
+    const valorNum = parseFloat(String(valorSangria).replace(',', '.')) || 0
+    if (valorNum <= 0) {
+      playSomErro()
+      toast.show('Informe um valor de sangria maior que zero', 'error')
+      return
+    }
+
+    setRegistrandoSangria(true)
+    try {
+      const result = await registrarSangria(
+        caixaAtual.caixaId,
+        valorNum,
+        motivoSangria.trim(),
+        usuario?.id
+      )
+      if (result?.sucesso) {
+        playSomVenda()
+        setValorSangria('')
+        setMotivoSangria('')
+        await refresh()
+        toast.show('Sangria registrada com sucesso!')
+      } else {
+        playSomErro()
+        toast.show(result?.erro || 'Não foi possível registrar a sangria', 'error')
+      }
+    } finally {
+      setRegistrandoSangria(false)
+    }
+  }
+
+  async function handleAdicionarItemVenda() {
+    if (!vendaAdicionarItem || !produtoSelecionado) return
+    const quantidadeNum = quantidadeParaNumero(quantidade)
+    const pesoBase = Math.max(1, parseFloat(String(pesoFrioVendaInput || '').replace(',', '.')) || 0)
+    const pesoGramas = pesoFrioVendaUnidade === 'kg' ? Math.round(pesoBase * 1000) : Math.round(pesoBase)
+    const estoqueNecessario = vendaEhFrios ? pesoGramas : quantidadeNum
+    const produto = produtos.find((p) => String(p.id) === String(produtoSelecionado))
+    if (Number(produto?.estoque ?? 0) < estoqueNecessario) {
+      playSomErro()
+      toast.show('Estoque insuficiente', 'error')
+      return
+    }
+    const payload = vendaEhFrios
+      ? { pesoGramas, tipoFrio: tipoFrioVenda }
+      : { quantidade: quantidadeNum }
+    const venda = await adicionarItemAVenda(vendaAdicionarItem.id, produtoSelecionado, payload)
+    if (venda) {
+      playSomVenda()
+      await refresh()
+      setVendaAdicionarItem(null)
+      setProdutoSelecionado('')
+      setQuantidade('1')
+      setTipoFrioVenda('Presunto')
+      setPesoFrioVendaInput('100')
+      setPesoFrioVendaUnidade('g')
+      toast.show('Item adicionado à venda!')
+    } else {
+      playSomErro()
+      toast.show('Erro ao adicionar item', 'error')
+    }
+  }
+
+  function limparEdicaoComanda() {
+    setComandaEdicaoId(null)
+    setProdutoComandaSelecionado('')
+    setQuantidadeComanda('1')
+    setTipoFrioComanda('Presunto')
+    setPesoFrioComandaInput('100')
+    setPesoFrioComandaUnidade('g')
+  }
+
+  async function handleAdicionarItemComanda() {
+    if (!comandaEdicaoId || !produtoComandaSelecionado) return
+    const quantidadeComandaNum = quantidadeParaNumero(quantidadeComanda)
+    const pesoBase = Math.max(1, parseFloat(String(pesoFrioComandaInput || '').replace(',', '.')) || 0)
+    const pesoGramas = pesoFrioComandaUnidade === 'kg' ? Math.round(pesoBase * 1000) : Math.round(pesoBase)
+    const estoqueNecessario = comandaEhFrios ? pesoGramas : quantidadeComandaNum
+    const produto = produtos.find((p) => String(p.id) === String(produtoComandaSelecionado))
+    if (Number(produto?.estoque ?? 0) < estoqueNecessario) {
+      playSomErro()
+      toast.show('Estoque insuficiente', 'error')
+      return
+    }
+
+    const payload = comandaEhFrios
+      ? {
+          pesoGramas,
+          tipoFrio: tipoFrioComanda,
+        }
+      : { quantidade: quantidadeComandaNum }
+    const comandaAtualizada = await adicionarItem(
+      comandaEdicaoId,
+      produtoComandaSelecionado,
+      payload
+    )
+    if (comandaAtualizada) {
+      playSomVenda()
+      await refresh()
+      setProdutoComandaSelecionado('')
+      setQuantidadeComanda('1')
+      setTipoFrioComanda('Presunto')
+      setPesoFrioComandaInput('100')
+      setPesoFrioComandaUnidade('g')
+      toast.show('Item adicionado ao pedido!')
+    } else {
+      playSomErro()
+      toast.show('Erro ao adicionar item no pedido', 'error')
+    }
+  }
+
+  async function handleAlterarQuantidadeComanda(itemId, novaQuantidade) {
+    if (!comandaEdicaoId) return
+    const comandaAtualizada = await alterarQtd(comandaEdicaoId, itemId, novaQuantidade)
+    if (comandaAtualizada) {
+      await refresh()
+    } else {
+      playSomErro()
+      toast.show('Erro ao atualizar quantidade do item', 'error')
+    }
+  }
+
+  async function handleRemoverItemComanda(itemId) {
+    if (!comandaEdicaoId) return
+    const comandaAtualizada = await removerItem(comandaEdicaoId, itemId)
+    if (comandaAtualizada) {
+      playSomVenda()
+      await refresh()
+      toast.show('Item removido do pedido!')
+    } else {
+      playSomErro()
+      toast.show('Erro ao remover item do pedido', 'error')
+    }
+  }
+
+  async function handleCancelarVenda(vendaId) {
+    const confirmou = window.confirm(
+      'Cancelar esta compra finalizada? O estoque será devolvido e a venda sairá dos totais.'
+    )
+    if (!confirmou) return
+    const confirmouNovamente = window.confirm(
+      'Confirma CANCELAR esta compra agora? Essa ação não pode ser desfeita.'
+    )
+    if (!confirmouNovamente) return
+
+    const result = await cancelarVendaFinalizada(vendaId)
+    if (result?.sucesso) {
+      playSomVenda()
+      await refresh()
+      toast.show('Compra cancelada com sucesso!')
+    } else {
+      playSomErro()
+      toast.show(result?.erro || 'Não foi possível cancelar a compra', 'error')
+    }
+  }
+
+  const caixa = caixaAtual || { aberto: false, valorInicial: 0 }
+  const totalVendasDinheiro = Number(totais.totalDinheiro || 0)
+  const totalSangriasCaixa = Number(totais.totalSangrias ?? totalSangrias ?? 0)
+  const dinheiroLiquido = Number(totais.dinheiroLiquido ?? totalVendasDinheiro - totalSangriasCaixa)
+  const totalEsperado = (caixa.valorInicial || 0) + dinheiroLiquido
+  const diferenca =
+    mostrarFechamento && valorContado
+      ? (parseFloat(valorContado.replace(',', '.')) || 0) - totalEsperado
+      : 0
+
+  const totalComandaPendente =
+    comandaPagamento &&
+    (comandaPagamento.total ??
+      (comandaPagamento.itens || []).reduce(
+        (acc, item) => acc + (item.subtotal ?? item.preco * item.quantidade),
+        0
+      ))
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-amber-900 mb-6">Caixa</h2>
+
+      {/* Status e Abertura/Fechamento */}
+      <div className="mb-6 flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 sm:items-center">
+        <span
+          className={`px-4 py-2 rounded-xl font-semibold ${
+            caixaAberto ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+          }`}
+        >
+          {caixaAberto ? 'Caixa aberto' : 'Caixa fechado'}
+        </span>
+        {!caixaAberto && !mostrarAbertura && (
+          <button
+            type="button"
+            onClick={() => setMostrarAbertura(true)}
+            className="w-full sm:w-auto px-4 py-3 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700"
+          >
+            Abrir caixa
+          </button>
+        )}
+        {caixaAberto && !mostrarFechamento && (
+          <button
+            type="button"
+            onClick={() => setMostrarFechamento(true)}
+            className="w-full sm:w-auto px-4 py-3 rounded-xl bg-amber-600 text-white font-semibold hover:bg-amber-700"
+          >
+            Fechar caixa
+          </button>
+        )}
+      </div>
+
+      {mostrarAbertura && (
+        <form
+          onSubmit={handleAbrirCaixa}
+          className="mb-6 p-6 bg-white rounded-xl border-2 border-amber-200"
+        >
+          <h3 className="text-lg font-semibold text-amber-900 mb-4">Abrir caixa</h3>
+          <div className="flex flex-col sm:flex-row gap-4 sm:items-end flex-wrap">
+            <div className="w-full sm:w-auto">
+              <label className="block text-sm font-medium mb-1">Valor inicial (R$)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={valorInicial}
+                onChange={(e) => setValorInicial(normalizarDecimalInput(e.target.value))}
+                placeholder="0,00"
+                className="px-4 py-3 rounded-lg border-2 border-amber-200 w-full sm:w-40"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-4 py-3 rounded-xl bg-green-600 text-white font-semibold"
+            >
+              Confirmar abertura
+            </button>
+            <button
+              type="button"
+              onClick={() => setMostrarAbertura(false)}
+              className="w-full sm:w-auto px-4 py-3 rounded-xl bg-stone-200"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
+
+      {mostrarFechamento && (
+        <form
+          onSubmit={handleFecharCaixa}
+          className="mb-6 p-6 bg-white rounded-xl border-2 border-amber-200"
+        >
+          <h3 className="text-lg font-semibold text-amber-900 mb-4">Fechar caixa</h3>
+          <div className="grid gap-3 mb-4">
+            <p>Valor inicial: R$ {(caixa.valorInicial || 0).toFixed(2)}</p>
+            <p>Total dinheiro hoje: R$ {totais.totalDinheiro.toFixed(2)}</p>
+            <p>Total cartão hoje: R$ {totais.totalCartao.toFixed(2)}</p>
+            <p>Total PIX hoje: R$ {totais.totalPix.toFixed(2)}</p>
+            <p className="font-bold">
+              Total esperado em caixa: R$ {totalEsperado.toFixed(2)}
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 sm:items-end flex-wrap">
+            <div className="w-full sm:w-auto">
+              <label className="block text-sm font-medium mb-1">Valor contado (R$)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={valorContado}
+                onChange={(e) => setValorContado(normalizarDecimalInput(e.target.value))}
+                placeholder="0,00"
+                className="px-4 py-3 rounded-lg border-2 border-amber-200 w-full sm:w-40"
+              />
+            </div>
+            {valorContado && (
+              <p
+                className={`font-bold ${
+                  diferenca >= 0 ? 'text-green-700' : 'text-red-700'
+                }`}
+              >
+                Diferença: R$ {diferenca.toFixed(2)}
+              </p>
+            )}
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-4 py-3 rounded-xl bg-amber-600 text-white font-semibold"
+            >
+              Confirmar fechamento
+            </button>
+            <button
+              type="button"
+              onClick={() => setMostrarFechamento(false)}
+              className="w-full sm:w-auto px-4 py-3 rounded-xl bg-stone-200"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Totais do dia */}
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
+          <p className="text-sm font-medium text-stone-500 mb-1">Total vendido hoje</p>
+          <p className="text-2xl font-bold text-amber-800 tabular-nums">
+            R$ {totalHoje.toFixed(2)}
+          </p>
+        </div>
+        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
+          <p className="text-sm font-medium text-stone-500 mb-1">Dinheiro</p>
+          <p className="text-2xl font-bold text-amber-800 tabular-nums">
+            R$ {totais.totalDinheiro.toFixed(2)}
+          </p>
+        </div>
+        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
+          <p className="text-sm font-medium text-stone-500 mb-1">Cartão</p>
+          <p className="text-2xl font-bold text-amber-800 tabular-nums">
+            R$ {totais.totalCartao.toFixed(2)}
+          </p>
+        </div>
+        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
+          <p className="text-sm font-medium text-stone-500 mb-1">PIX</p>
+          <p className="text-2xl font-bold text-amber-800 tabular-nums">
+            R$ {totais.totalPix.toFixed(2)}
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
+          <p className="text-sm font-medium text-stone-500 mb-1">Valor inicial do caixa</p>
+          <p className="text-2xl font-bold text-amber-800 tabular-nums">
+            R$ {Number(caixa.valorInicial || 0).toFixed(2)}
+          </p>
+        </div>
+        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
+          <p className="text-sm font-medium text-stone-500 mb-1">Vendas em dinheiro (caixa atual)</p>
+          <p className="text-2xl font-bold text-amber-800 tabular-nums">
+            R$ {totalVendasDinheiro.toFixed(2)}
+          </p>
+        </div>
+        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
+          <p className="text-sm font-medium text-stone-500 mb-1">Total sangrias</p>
+          <p className="text-2xl font-bold text-red-700 tabular-nums">
+            R$ {totalSangriasCaixa.toFixed(2)}
+          </p>
+        </div>
+        <div className="p-6 rounded-xl bg-white border-2 border-amber-200 shadow-sm">
+          <p className="text-sm font-medium text-stone-500 mb-1">Dinheiro líquido</p>
+          <p className="text-2xl font-bold text-green-700 tabular-nums">
+            R$ {dinheiroLiquido.toFixed(2)}
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-8 p-6 bg-white rounded-xl border-2 border-amber-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-amber-900 mb-4">Sangria de Caixa</h3>
+        <form onSubmit={handleRegistrarSangria} className="flex flex-col sm:flex-row flex-wrap gap-3 sm:items-end mb-4">
+          <div className="w-full sm:w-auto">
+            <label className="block text-sm font-medium mb-1">Valor (R$)</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={valorSangria}
+              onChange={(e) => setValorSangria(normalizarDecimalInput(e.target.value))}
+              placeholder="0,00"
+              className="px-4 py-3 rounded-lg border-2 border-amber-200 w-full sm:w-40"
+              disabled={!caixaAberto || !isAdmin || registrandoSangria}
+            />
+          </div>
+          <div className="w-full sm:min-w-[260px] sm:flex-1">
+            <label className="block text-sm font-medium mb-1">Motivo (opcional)</label>
+            <input
+              type="text"
+              value={motivoSangria}
+              onChange={(e) => setMotivoSangria(e.target.value)}
+              placeholder="Ex: retirada para cofre"
+              className="w-full px-4 py-3 rounded-lg border-2 border-amber-200"
+              disabled={!caixaAberto || !isAdmin || registrandoSangria}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!caixaAberto || !isAdmin || registrandoSangria}
+            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-50"
+          >
+            {registrandoSangria ? 'Registrando...' : 'Registrar Sangria'}
+          </button>
+        </form>
+
+        {!isAdmin && (
+          <p className="text-sm text-red-700 mb-3">Somente administradores podem registrar sangria.</p>
+        )}
+
+        {sangrias.length === 0 ? (
+          <p className="text-sm text-stone-500">Nenhuma sangria registrada para este caixa.</p>
+        ) : (
+          <ul className="space-y-2">
+            {sangrias.map((sangria) => (
+              <li
+                key={sangria.id}
+                className="p-3 rounded-lg border border-amber-200 bg-amber-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+              >
+                <div>
+                  <p className="font-semibold text-amber-900">
+                    R$ {Number(sangria.valor || 0).toFixed(2)}
+                  </p>
+                  <p className="text-sm text-stone-600">
+                    {sangria.motivo || 'Sem motivo informado'}
+                  </p>
+                  <p className="text-xs text-stone-500">
+                    Operador: {sangria.operadorNome || sangria.operadorId}
+                  </p>
+                </div>
+                <p className="text-xs text-stone-500">
+                  {formatarData(sangria.createdAt || sangria.createdAtIso)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Pendentes de Pagamento */}
+      <h3 className="text-lg font-semibold text-amber-900 mb-4">
+        Mesas no Caixa
+      </h3>
+      <div className="mb-8 space-y-4">
+        {comandasPendentes.length === 0 ? (
+          <div className="py-8 text-center bg-white rounded-xl border-2 border-dashed border-amber-200">
+            <p className="text-stone-500">Nenhuma mesa disponível no caixa.</p>
+          </div>
+        ) : (
+          comandasPendentes.map((comanda) => {
+            const total =
+              comanda.total ??
+              (comanda.itens || []).reduce(
+                (acc, item) =>
+                  acc + (item.subtotal ?? item.preco * item.quantidade),
+                0
+              )
+            return (
+              <div
+                key={comanda.id}
+                className="bg-white rounded-xl border-2 border-amber-300 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+              >
+                <div>
+                  <h4 className="text-lg font-bold text-amber-900">
+                    {comanda.identificacao}
+                  </h4>
+                  <p className="text-xs text-stone-500 mt-1">
+                    Status: {comanda.status === 'aguardando_pagamento' ? 'Aguardando pagamento' : 'Aberta'}
+                  </p>
+                  {comanda.itens && comanda.itens.length > 0 && (
+                    <ul className="mt-2 text-sm text-stone-600 space-y-0.5">
+                      {comanda.itens.slice(0, 3).map((item) => (
+                        <li key={item.id}>
+                          {formatarQuantidadeItem(item)} {item.nome}
+                        </li>
+                      ))}
+                      {comanda.itens.length > 3 && (
+                        <li className="text-stone-400">
+                          +{comanda.itens.length - 3} itens
+                        </li>
+                      )}
+                    </ul>
+                  )}
+                </div>
+                <div className="flex w-full sm:w-auto flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  <p className="text-xl font-bold text-amber-800 tabular-nums">
+                    R$ {total.toFixed(2)}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (comandaEdicaoId === comanda.id) {
+                        limparEdicaoComanda()
+                        return
+                      }
+                      setComandaEdicaoId(comanda.id)
+                      setProdutoComandaSelecionado('')
+                      setQuantidadeComanda('1')
+                      setTipoFrioComanda('Presunto')
+                      setPesoFrioComandaInput('100')
+                      setPesoFrioComandaUnidade('g')
+                    }}
+                    className="w-full sm:w-auto px-4 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-700"
+                  >
+                    {comandaEdicaoId === comanda.id ? 'Fechar edição' : 'Editar pedido'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setComandaPagamento(comanda)}
+                    className="w-full sm:w-auto px-6 py-3 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700"
+                  >
+                    {comanda.status === 'aberta' ? 'Enviar e cobrar' : 'Cobrar'}
+                  </button>
+                </div>
+
+                {comandaEdicaoId === comanda.id && (
+                  <div className="w-full sm:basis-full mt-2 p-4 rounded-lg border border-amber-200 bg-amber-50">
+                    <p className="text-sm font-semibold text-amber-900 mb-3">
+                      Editar pedido antes da cobrança
+                    </p>
+
+                    {comandaEmEdicao?.itens?.length ? (
+                      <div className="space-y-2 mb-4">
+                        <p className="text-xs text-stone-500">Use o botão X para cancelar item da mesa.</p>
+                        {comandaEmEdicao.itens.map((item) => (
+                          <ItemRow
+                            key={item.id}
+                            item={item}
+                            onQuantidadeChange={handleAlterarQuantidadeComanda}
+                            onRemover={handleRemoverItemComanda}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-stone-600 mb-4">
+                        Pedido sem itens no momento.
+                      </p>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 items-stretch sm:items-end">
+                      <select
+                        value={produtoComandaSelecionado}
+                        onChange={(e) => setProdutoComandaSelecionado(e.target.value)}
+                        className="w-full sm:w-auto sm:min-w-[180px] px-3 py-2 rounded-lg border-2 border-amber-200"
+                      >
+                        <option value="">Produto...</option>
+                        {produtosOrdenados.map((p) => (
+                          <option key={p.id} value={p.id} disabled={Number(p.estoque ?? 0) < 1}>
+                            {rotuloProdutoOption(p)}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={quantidadeComanda}
+                        onChange={(e) => setQuantidadeComanda(normalizarQuantidadeInput(e.target.value))}
+                        onBlur={() => setQuantidadeComanda(String(quantidadeParaNumero(quantidadeComanda)))}
+                        className="w-full sm:w-20 px-3 py-2 rounded-lg border-2 border-amber-200"
+                      />
+                      {comandaEhFrios && (
+                        <>
+                          <select
+                            value={tipoFrioComanda}
+                            onChange={(e) => setTipoFrioComanda(e.target.value)}
+                            className="w-full sm:w-auto px-3 py-2 rounded-lg border-2 border-amber-200"
+                          >
+                            {tiposFrios.map((tipo) => (
+                              <option key={tipo} value={tipo}>
+                                {tipo}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={pesoFrioComandaInput}
+                            onChange={(e) =>
+                              setPesoFrioComandaInput(e.target.value.replace(/[^\d,.]/g, ''))
+                            }
+                            className="w-full sm:w-24 px-3 py-2 rounded-lg border-2 border-amber-200"
+                          />
+                          <select
+                            value={pesoFrioComandaUnidade}
+                            onChange={(e) => setPesoFrioComandaUnidade(e.target.value)}
+                            className="w-full sm:w-auto px-3 py-2 rounded-lg border-2 border-amber-200"
+                          >
+                            <option value="g">g</option>
+                            <option value="kg">kg</option>
+                          </select>
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleAdicionarItemComanda}
+                        disabled={!produtoComandaSelecionado}
+                        className="w-full sm:w-auto px-4 py-2 rounded-lg bg-green-600 text-white font-semibold disabled:opacity-50"
+                      >
+                        + Adicionar item
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      {/* Vendas Finalizadas */}
+      <h3 className="text-lg font-semibold text-amber-900 mb-4">
+        Vendas Finalizadas
+      </h3>
+      <div className="space-y-4">
+        {vendasOrdenadas.length === 0 ? (
+          <div className="py-12 text-center bg-white rounded-xl border-2 border-dashed border-amber-200">
+            <p className="text-stone-500">Nenhuma venda registrada hoje.</p>
+          </div>
+        ) : (
+          vendasOrdenadas.map((venda) => (
+            <div
+              key={venda.id}
+              className="bg-white rounded-xl border-2 border-amber-200 p-6 shadow-sm"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-amber-900">
+                    {venda.identificacao}
+                  </h3>
+                  <p className="text-sm text-stone-500">{formatarData(venda.data)}</p>
+                  {venda.metodoPagamento && (
+                    <p className="text-sm text-amber-700 mt-1">{venda.metodoPagamento}</p>
+                  )}
+                  {venda.metodoPagamento?.toLowerCase().includes('dinheiro') &&
+                    (venda.valorRecebido != null || venda.troco != null) && (
+                      <p className="text-sm text-stone-600 mt-1">
+                        Recebido: R$ {(venda.valorRecebido || 0).toFixed(2)} | Troco: R${' '}
+                        {(venda.troco || 0).toFixed(2)}
+                      </p>
+                    )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-xl font-bold text-amber-800 tabular-nums">
+                    R$ {(venda.total || 0).toFixed(2)}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleCancelarVenda(venda.id)}
+                    className="px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700"
+                  >
+                    Cancelar compra
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVendaAdicionarItem(venda)}
+                    className="px-3 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700"
+                  >
+                    + Adicionar Item
+                  </button>
+                </div>
+              </div>
+              {venda.itens && venda.itens.length > 0 && (
+                <ul className="space-y-1 text-sm text-stone-600 border-t border-amber-100 pt-4">
+                  {venda.itens.map((item) => (
+                    <li key={item.id} className="flex justify-between gap-2">
+                      <span>
+                        {formatarQuantidadeItem(item)} {item.nome}
+                      </span>
+                      <span className="tabular-nums">
+                        R${' '}
+                        {(item.subtotal ?? item.preco * item.quantidade).toFixed(2)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {vendaAdicionarItem?.id === venda.id && (
+                <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <p className="text-sm font-semibold mb-2">Adicionar item à venda</p>
+                  <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 items-stretch sm:items-end">
+                    <select
+                      value={produtoSelecionado}
+                      onChange={(e) => setProdutoSelecionado(e.target.value)}
+                      className="w-full sm:w-auto sm:min-w-[180px] px-3 py-2 rounded-lg border-2 border-amber-200"
+                    >
+                      <option value="">Produto...</option>
+                      {produtosOrdenados.map((p) => (
+                        <option key={p.id} value={p.id} disabled={Number(p.estoque ?? 0) < 1}>
+                          {rotuloProdutoOption(p)}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={quantidade}
+                      onChange={(e) => setQuantidade(normalizarQuantidadeInput(e.target.value))}
+                      onBlur={() => setQuantidade(String(quantidadeParaNumero(quantidade)))}
+                      className="w-full sm:w-20 px-3 py-2 rounded-lg border-2 border-amber-200"
+                    />
+                    {vendaEhFrios && (
+                      <>
+                        <select
+                          value={tipoFrioVenda}
+                          onChange={(e) => setTipoFrioVenda(e.target.value)}
+                          className="w-full sm:w-auto px-3 py-2 rounded-lg border-2 border-amber-200"
+                        >
+                          {tiposFrios.map((tipo) => (
+                            <option key={tipo} value={tipo}>
+                              {tipo}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={pesoFrioVendaInput}
+                          onChange={(e) => setPesoFrioVendaInput(e.target.value.replace(/[^\d,.]/g, ''))}
+                          className="w-full sm:w-24 px-3 py-2 rounded-lg border-2 border-amber-200"
+                        />
+                        <select
+                          value={pesoFrioVendaUnidade}
+                          onChange={(e) => setPesoFrioVendaUnidade(e.target.value)}
+                          className="w-full sm:w-auto px-3 py-2 rounded-lg border-2 border-amber-200"
+                        >
+                          <option value="g">g</option>
+                          <option value="kg">kg</option>
+                        </select>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleAdicionarItemVenda}
+                      disabled={!produtoSelecionado}
+                      className="w-full sm:w-auto px-4 py-2 rounded-lg bg-green-600 text-white font-semibold disabled:opacity-50"
+                    >
+                      Adicionar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVendaAdicionarItem(null)
+                        setProdutoSelecionado('')
+                        setQuantidade('1')
+                        setTipoFrioVenda('Presunto')
+                        setPesoFrioVendaInput('100')
+                        setPesoFrioVendaUnidade('g')
+                      }}
+                      className="w-full sm:w-auto px-4 py-2 rounded-lg bg-stone-200"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {comandaPagamento && totalComandaPendente != null && (
+        <ModalPagamento
+          total={totalComandaPendente}
+          onConfirmar={handleConfirmarPagamento}
+          onCancelar={() => setComandaPagamento(null)}
+        />
+      )}
+    </div>
+  )
+}

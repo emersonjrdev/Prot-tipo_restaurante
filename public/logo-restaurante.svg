@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-labelledby="t">
+  <title id="t">Sua logo aqui</title>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2dd4bf"/>
+      <stop offset="100%" stop-color="#0d9488"/>
+    </linearGradient>
+  </defs>
+  <circle cx="120" cy="120" r="112" fill="url(#g)" stroke="#0f766e" stroke-width="3" opacity="0.98"/>
+  <path fill="#fff" fill-opacity="0.95" d="M88 64h12v96H88zm52 0h12c0 32-8 48-24 56v40h-12v-40c-16-8-24-24-24-56h12v56h12V64zm-76 8h8v80h-8z"/>
+  <text x="120" y="188" text-anchor="middle" fill="#ecfdf5" font-family="system-ui,Segoe UI,sans-serif" font-size="14" font-weight="600">Sua logo aqui</text>
+</svg>

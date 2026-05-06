@@ -1,0 +1,234 @@
+import { useMemo, useState } from 'react'
+import { useEstoque } from '../hooks/useEstoque'
+import { useProdutos } from '../hooks/usePDV'
+import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../contexts/ToastContext'
+import { playSomAcao, playSomErro } from '../utils/sons'
+
+export default function Estoque() {
+  const [produtos, estoqueBaixo, refresh, { setEstoque, incrementarEstoque, limparEstoqueNaoFixos }] =
+    useEstoque()
+  const [produtosAll] = useProdutos()
+  const { usuario, isAdmin } = useAuth()
+  const toast = useToast()
+  const [buscaProduto, setBuscaProduto] = useState('')
+  const [editando, setEditando] = useState(null)
+  const [valorEntrada, setValorEntrada] = useState('')
+  const [limpandoEstoque, setLimpandoEstoque] = useState(false)
+
+  function sanitizarInteiro(valor) {
+    return String(valor || '').replace(/\D/g, '')
+  }
+
+  function ordenarPorNome(a, b) {
+    return String(a?.nome || '').localeCompare(String(b?.nome || ''), 'pt-BR', {
+      sensitivity: 'base',
+    })
+  }
+
+  async function handleSalvarEstoque(produtoId) {
+    const v = parseInt(valorEntrada, 10)
+    if (isNaN(v) || v < 0) return
+    const r = await setEstoque(produtoId, v)
+    if (r.sucesso) {
+      await refresh()
+      setEditando(null)
+      setValorEntrada('')
+    }
+  }
+
+  async function handleEntrada(produtoId) {
+    const v = parseInt(valorEntrada, 10)
+    if (isNaN(v) || v <= 0) return
+    const r = await incrementarEstoque(produtoId, v)
+    if (r.sucesso) {
+      await refresh()
+      setEditando(null)
+      setValorEntrada('')
+    }
+  }
+
+  async function handleLimparEstoqueNaoFixos() {
+    if (!isAdmin || !usuario?.id || limpandoEstoque) return
+
+    const confirmou = window.confirm(
+      'Isso vai zerar o estoque de todos os produtos do cardápio. Deseja continuar?'
+    )
+    if (!confirmou) return
+
+    const confirmouNovamente = window.confirm(
+      'Confirma LIMPAR TODO O ESTOQUE? Essa ação não pode ser desfeita.'
+    )
+    if (!confirmouNovamente) return
+
+    setLimpandoEstoque(true)
+    try {
+      const result = await limparEstoqueNaoFixos(usuario.id)
+      if (result?.sucesso) {
+        playSomAcao()
+        await refresh()
+        toast.show(`Estoque limpo! Produtos atualizados: ${Number(result.atualizados || 0)}`)
+      } else {
+        playSomErro()
+        toast.show(result?.erro || 'Não foi possível limpar o estoque', 'error')
+      }
+    } finally {
+      setLimpandoEstoque(false)
+    }
+  }
+
+  const produtosParaExibir = useMemo(() => {
+    const base =
+      produtos.length > 0 ? [...produtos] : produtosAll.map((p) => ({ ...p, estoque: p.estoque ?? 0 }))
+    return base.sort(ordenarPorNome)
+  }, [produtos, produtosAll])
+
+  const estoqueBaixoOrdenado = useMemo(
+    () => [...estoqueBaixo].sort(ordenarPorNome),
+    [estoqueBaixo]
+  )
+
+  const termoBusca = String(buscaProduto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+  const produtosFiltrados = useMemo(
+    () =>
+      termoBusca
+        ? produtosParaExibir.filter((p) =>
+            String(p?.nome || '')
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .toLowerCase()
+              .includes(termoBusca)
+          )
+        : produtosParaExibir,
+    [produtosParaExibir, termoBusca]
+  )
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-amber-900 mb-6">Estoque</h2>
+
+      {isAdmin && (
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={handleLimparEstoqueNaoFixos}
+            disabled={limpandoEstoque}
+            className="w-full sm:w-auto px-4 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-50"
+          >
+            {limpandoEstoque
+              ? 'Limpando estoque...'
+              : 'Zerar todo o estoque'}
+          </button>
+        </div>
+      )}
+
+      {estoqueBaixoOrdenado.length > 0 && (
+        <div className="mb-6 p-4 rounded-xl bg-amber-100 border-2 border-amber-300">
+          <p className="font-semibold text-amber-900">
+            ⚠️ {estoqueBaixoOrdenado.length} produto(s) com estoque baixo (menos de 5 unidades)
+          </p>
+          <p className="text-sm text-amber-900 mt-1">
+            {estoqueBaixoOrdenado.map((p) => `${p.nome} (${p.estoque ?? 0})`).join(', ')}
+          </p>
+        </div>
+      )}
+
+      {produtosParaExibir.length === 0 ? (
+        <div className="py-16 text-center bg-white rounded-xl border-2 border-dashed border-amber-200">
+          <p className="text-stone-500">Nenhum produto cadastrado.</p>
+          <p className="text-stone-500 text-sm mt-2">
+            Cadastre produtos em Produtos para gerenciar o estoque.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-amber-900 mb-1">Buscar produto</label>
+            <input
+              type="search"
+              value={buscaProduto}
+              onChange={(e) => setBuscaProduto(e.target.value)}
+              placeholder="Digite o nome do produto..."
+              className="w-full px-4 py-3 rounded-lg border-2 border-amber-200 focus:border-amber-500 outline-none text-amber-900"
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {produtosFiltrados.map((produto) => {
+            const baixo = (produto.estoque ?? 0) < 5
+            const isEditando = editando?.id === produto.id
+
+            return (
+              <div
+                key={produto.id}
+                className={`p-5 rounded-xl bg-white border-2 transition-colors ${
+                  baixo ? 'border-amber-400 bg-amber-50/50' : 'border-amber-200'
+                }`}
+              >
+                <div className="flex justify-between items-start gap-4 mb-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-amber-900">{produto.nome}</h3>
+                    <p className="text-2xl font-bold text-amber-800 tabular-nums">
+                      Estoque: {produto.estoque ?? 0}
+                    </p>
+                  </div>
+                </div>
+
+                {isEditando ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={valorEntrada}
+                      onChange={(e) => setValorEntrada(sanitizarInteiro(e.target.value))}
+                      placeholder="Quantidade"
+                      className="w-full px-3 py-2 rounded-lg border-2 border-amber-200"
+                    />
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSalvarEstoque(produto.id)}
+                        className="flex-1 py-3 rounded-lg bg-amber-600 text-white font-semibold"
+                      >
+                        Definir
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleEntrada(produto.id)}
+                        className="flex-1 py-3 rounded-lg bg-green-600 text-white font-semibold"
+                      >
+                        + Entrada
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditando(null)
+                          setValorEntrada('')
+                        }}
+                        className="py-3 px-3 rounded-lg bg-stone-200"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setEditando(produto)}
+                    className="w-full py-2 rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700"
+                  >
+                    Atualizar estoque
+                  </button>
+                )}
+              </div>
+            )
+          })}
+          </div>
+          {produtosFiltrados.length === 0 && termoBusca && (
+            <p className="mt-4 text-center text-stone-500">Nenhum produto encontrado para &quot;{buscaProduto}&quot;</p>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
